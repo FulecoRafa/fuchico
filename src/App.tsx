@@ -1,15 +1,16 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { CalendarClock, Files, FolderOpen } from "lucide-react";
+import { CalendarClock, Files, FolderOpen, Search } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { AgendaView } from "@/modules/agenda";
 import { EditorPane } from "@/modules/editor";
 import { FileExplorer } from "@/modules/explorer";
+import { SearchPanel } from "@/modules/search";
 import { TabBar, useTabs } from "@/modules/tabs";
 
 const LAST_ROOT_KEY = "helix.lastRootPath";
 
-type MainView = "editor" | "agenda";
+type MainView = "editor" | "agenda" | "search";
 
 function App() {
   const [rootPath, setRootPath] = useState<string | null>(null);
@@ -100,6 +101,18 @@ function App() {
         >
           <CalendarClock size={17} strokeWidth={1.75} />
         </button>
+        <button
+          type="button"
+          className={
+            mainView === "search"
+              ? "app-activitybar-btn app-activitybar-btn-active"
+              : "app-activitybar-btn"
+          }
+          title="Search"
+          onClick={() => setMainView("search")}
+        >
+          <Search size={17} strokeWidth={1.75} />
+        </button>
       </div>
       <div className="app-layout">
         <div className="app-sidebar">
@@ -126,6 +139,8 @@ function App() {
         <div className="app-main">
           {mainView === "agenda" ? (
             <AgendaView rootPath={rootPath} onOpenItem={openFile} />
+          ) : mainView === "search" ? (
+            <SearchPanel rootPath={rootPath} onOpenMatch={openFile} />
           ) : (
             <div className="editor-area">
               {tabs.length > 0 && (
