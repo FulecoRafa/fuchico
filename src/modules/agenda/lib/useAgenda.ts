@@ -12,7 +12,24 @@ export type AgendaItem = {
   time: string | null;
   file: string;
   line: number;
+  /** `daily` | `weekdays` | `weekends` | comma-separated weekday abbrevs. */
+  recurrence: string | null;
+  recurTime: string | null;
 };
+
+const WEEKDAY_ABBREVS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+
+/** Whether a recurrence rule (see `recurrence`) covers today's weekday. */
+export function isRecurrenceDueOn(rule: string, date: Date): boolean {
+  const day = date.getDay();
+  if (rule === "daily") return true;
+  if (rule === "weekdays") return day >= 1 && day <= 5;
+  if (rule === "weekends") return day === 0 || day === 6;
+  return rule
+    .split(",")
+    .map((s) => s.trim())
+    .includes(WEEKDAY_ABBREVS[day]);
+}
 
 type State =
   | { status: "idle" }

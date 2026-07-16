@@ -30,6 +30,12 @@ pub struct AgendaItem {
     pub file: String,
     /// 1-based line number, for jump-to-line and toggling.
     pub line: usize,
+    /// `daily` | `weekdays` | `weekends` | comma-separated weekday abbrevs
+    /// (e.g. `mon,wed,fri`), if a `🔁` rule was found on the line.
+    pub recurrence: Option<String>,
+    /// `HH:MM`, if present alongside the recurrence rule.
+    #[serde(rename = "recurTime")]
+    pub recur_time: Option<String>,
 }
 
 const SKIP_DIRS: &[&str] = &["node_modules", "target", "dist", ".git"];
@@ -65,6 +71,7 @@ struct Patterns {
     checkbox: Regex,
     todo: Regex,
     date: Regex,
+    recur: Regex,
 }
 
 impl Patterns {
@@ -73,6 +80,10 @@ impl Patterns {
             checkbox: Regex::new(r"^[-*+]\s\[([ xX])\]\s*(.*)$").unwrap(),
             todo: Regex::new(r"(?i)^TODO:?\s+(.+)$").unwrap(),
             date: Regex::new(r"📅\s*(\d{4}-\d{2}-\d{2})(?:\s+(\d{2}:\d{2}))?").unwrap(),
+            recur: Regex::new(
+                r"(?i)🔁\s*(daily|weekdays|weekends|[a-z]{3}(?:,[a-z]{3})*)(?:\s+(\d{2}:\d{2}))?",
+            )
+            .unwrap(),
         }
     }
 
@@ -80,6 +91,16 @@ impl Patterns {
         match self.date.captures(text) {
             Some(c) => (
                 c.get(1).map(|m| m.as_str().to_string()),
+                c.get(2).map(|m| m.as_str().to_string()),
+            ),
+            None => (None, None),
+        }
+    }
+
+    fn extract_recurrence(&self, text: &str) -> (Option<String>, Option<String>) {
+        match self.recur.captures(text) {
+            Some(c) => (
+                c.get(1).map(|m| m.as_str().to_lowercase()),
                 c.get(2).map(|m| m.as_str().to_string()),
             ),
             None => (None, None),
@@ -130,6 +151,8 @@ pub fn tasks_scan(root: String) -> Result<Vec<AgendaItem>, String> {
                         time,
                         file: file_str.clone(),
                         line: idx + 1,
+                        recurrence: None,
+                        recur_time: None,
                     });
                     continue;
                 }
@@ -139,6 +162,7 @@ pub fn tasks_scan(root: String) -> Result<Vec<AgendaItem>, String> {
                 let checked = matches!(&caps[1], "x" | "X");
                 let text = caps[2].to_string();
                 let (date, time) = patterns.extract_date(&text);
+                let (recurrence, recur_time) = patterns.extract_recurrence(&text);
                 items.push(AgendaItem {
                     kind: ItemKind::Task,
                     checked,
@@ -147,6 +171,8 @@ pub fn tasks_scan(root: String) -> Result<Vec<AgendaItem>, String> {
                     time,
                     file: file_str.clone(),
                     line: idx + 1,
+                    recurrence,
+                    recur_time,
                 });
                 continue;
             }
@@ -154,6 +180,7 @@ pub fn tasks_scan(root: String) -> Result<Vec<AgendaItem>, String> {
             if let Some(caps) = patterns.todo.captures(trimmed) {
                 let text = caps[1].to_string();
                 let (date, time) = patterns.extract_date(&text);
+                let (recurrence, recur_time) = patterns.extract_recurrence(&text);
                 items.push(AgendaItem {
                     kind: ItemKind::Todo,
                     checked: false,
@@ -162,6 +189,8 @@ pub fn tasks_scan(root: String) -> Result<Vec<AgendaItem>, String> {
                     time,
                     file: file_str.clone(),
                     line: idx + 1,
+                    recurrence,
+                    recur_time,
                 });
             }
         }
@@ -235,6 +264,24 @@ mod scan_tests {
         assert_eq!(items[3].date.as_deref(), Some("2026-07-21"));
         assert_eq!(items[3].time.as_deref(), Some("10:00"));
         assert_eq!(items[3].text, "four");
+    }
+
+    #[test]
+    fn scans_recurring_tasks() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("a.md"),
+            "- [ ] give dog food 🔁 daily 08:00\n- [ ] trash 🔁 mon,wed,fri\nTODO: standup 🔁 weekdays\n- [ ] one-off\n",
+        )
+        .unwrap();
+        let items = tasks_scan(dir.path().to_string_lossy().into_owned()).unwrap();
+        assert_eq!(items.len(), 4);
+        assert_eq!(items[0].recurrence.as_deref(), Some("daily"));
+        assert_eq!(items[0].recur_time.as_deref(), Some("08:00"));
+        assert_eq!(items[1].recurrence.as_deref(), Some("mon,wed,fri"));
+        assert_eq!(items[1].recur_time, None);
+        assert_eq!(items[2].recurrence.as_deref(), Some("weekdays"));
+        assert_eq!(items[3].recurrence, None);
     }
 
     #[test]
