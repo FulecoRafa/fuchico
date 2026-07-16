@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Helix Editor",
+  "productName": "Fuchico",
   "version": "0.1.0",
-  "identifier": "dev.fuleco.helix-editor",
+  "identifier": "dev.fuleco.fuchico",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1423",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Helix Editor",
+        "title": "Fuchico",
         "width": 1000,
         "height": 700
       }
