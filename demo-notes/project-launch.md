@@ -18,7 +18,7 @@ in the global Tasks & Calendar view.
 
 - [ ] Finish the launch checklist 📅 2026-07-10
 - [ ] Write release notes 📅 2026-07-16
-- [ ] Ping design for the final banner 📅 2026-07-22
+- [x] Ping design for the final banner 📅 2026-07-22
 - [x] Draft the announcement email
 - [ ] Decide on the launch tagline
 

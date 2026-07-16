@@ -311,6 +311,24 @@ const chromeTheme = EditorView.theme({
     color: "var(--foreground)",
     borderColor: "var(--foreground)",
   },
+
+  ".cm-mermaid-preview-btn": {
+    display: "inline-block",
+    marginLeft: "12px",
+    fontFamily: "var(--font-sans, inherit)",
+    fontSize: "11px",
+    fontWeight: "600",
+    backgroundColor: "color-mix(in oklch, var(--syntax-function) 14%, transparent)",
+    color: "var(--syntax-function)",
+    border: "1px solid color-mix(in oklch, var(--syntax-function) 40%, transparent)",
+    borderRadius: "var(--radius-sm)",
+    padding: "1px 6px",
+    cursor: "pointer",
+    verticalAlign: "middle",
+  },
+  ".cm-mermaid-preview-btn:hover": {
+    backgroundColor: "color-mix(in oklch, var(--syntax-function) 24%, transparent)",
+  },
 });
 
 const syntaxHighlightStyle = HighlightStyle.define([

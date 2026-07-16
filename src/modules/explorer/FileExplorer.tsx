@@ -1,5 +1,11 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { FilePlus, FolderOpen, FolderPlus, RefreshCw } from "lucide-react";
+import {
+  FilePlus,
+  FolderOpen,
+  FolderPlus,
+  PenTool,
+  RefreshCw,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EntryRow, PendingRow, type RowActions, StatusRow } from "./TreeRow";
 import { useFileTree } from "./lib/useFileTree";
@@ -29,7 +35,13 @@ type Row =
       isDir: boolean;
       depth: number;
     }
-  | { kind: "pending"; key: string; depth: number; pendingKind: "file" | "dir" }
+  | {
+      kind: "pending";
+      key: string;
+      depth: number;
+      pendingKind: "file" | "dir";
+      placeholder?: string;
+    }
   | {
       kind: "status";
       key: string;
@@ -90,6 +102,7 @@ function buildRows(
             key: `pending:${path}`,
             depth: depth + 1,
             pendingKind: tree.pendingCreate.kind,
+            placeholder: tree.pendingCreate.placeholder,
           });
         }
         if (child?.status === "loading") {
@@ -295,6 +308,7 @@ export function FileExplorer({
           <PendingRow
             depth={row.depth}
             kind={row.pendingKind}
+            placeholder={row.placeholder}
             onCommit={tree.commitCreate}
             onCancel={tree.cancelCreate}
           />
@@ -345,6 +359,19 @@ export function FileExplorer({
         <button
           type="button"
           className="explorer-header-btn"
+          title="New drawing"
+          onClick={() =>
+            tree.beginCreate(rootPath, "file", {
+              defaultExt: "excalidraw",
+              placeholder: "New drawing",
+            })
+          }
+        >
+          <PenTool size={14} strokeWidth={1.75} />
+        </button>
+        <button
+          type="button"
+          className="explorer-header-btn"
           title="Refresh"
           onClick={() => tree.refresh(rootPath)}
         >
@@ -357,6 +384,7 @@ export function FileExplorer({
           <PendingRow
             depth={0}
             kind={pendingAtRoot.kind}
+            placeholder={pendingAtRoot.placeholder}
             onCommit={tree.commitCreate}
             onCancel={tree.cancelCreate}
           />

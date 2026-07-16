@@ -18,6 +18,8 @@ type Options = {
   onDirtyChange?: (dirty: boolean) => void;
 };
 
+const AUTOSAVE_DEBOUNCE_MS = 800;
+
 export function useDocument({ path, onDirtyChange }: Options) {
   const [doc, setDoc] = useState<DocumentState>({ status: "loading" });
   const [dirty, setDirty] = useState(false);
@@ -30,6 +32,17 @@ export function useDocument({ path, onDirtyChange }: Options) {
     dirtyRef.current = dirty;
   }, [dirty]);
 
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearAutosaveTimer = useCallback(() => {
+    if (autosaveTimerRef.current !== null) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+  }, []);
+  // Unmount/path-change safety net -- a pending autosave must not fire
+  // against a buffer/path that's no longer current.
+  useEffect(() => clearAutosaveTimer, [clearAutosaveTimer]);
+
   const onDirtyChangeRef = useRef(onDirtyChange);
   useEffect(() => {
     onDirtyChangeRef.current = onDirtyChange;
@@ -41,6 +54,7 @@ export function useDocument({ path, onDirtyChange }: Options) {
   // Load on path change or explicit reload.
   useEffect(() => {
     let cancelled = false;
+    clearAutosaveTimer();
     setDoc({ status: "loading" });
     setDirty(false);
 
@@ -64,7 +78,7 @@ export function useDocument({ path, onDirtyChange }: Options) {
     return () => {
       cancelled = true;
     };
-  }, [path]);
+  }, [path, clearAutosaveTimer]);
 
   // Skipped while dirty (never clobber unsaved edits).
   const reload = useCallback((): boolean => {
@@ -88,23 +102,38 @@ export function useDocument({ path, onDirtyChange }: Options) {
   }, [path]);
 
   const save = useCallback(async () => {
+    clearAutosaveTimer();
     if (bufferRef.current === savedRef.current) return;
     const content = bufferRef.current;
     await invoke("fs_write_file", { path, content, source: "editor" });
     savedRef.current = content;
     setDirty(false);
-  }, [path]);
+  }, [path, clearAutosaveTimer]);
+  const saveRef = useRef(save);
+  saveRef.current = save;
 
   // Adopt externally formatted content as the saved baseline.
   const markSaved = useCallback((content: string) => {
+    clearAutosaveTimer();
     savedRef.current = content;
     setDirty(bufferRef.current !== content);
-  }, []);
+  }, [clearAutosaveTimer]);
 
-  const onChange = useCallback((next: string) => {
-    bufferRef.current = next;
-    setDirty(next !== savedRef.current);
-  }, []);
+  const onChange = useCallback(
+    (next: string) => {
+      bufferRef.current = next;
+      const isDirty = next !== savedRef.current;
+      setDirty(isDirty);
+      clearAutosaveTimer();
+      if (isDirty) {
+        autosaveTimerRef.current = setTimeout(() => {
+          autosaveTimerRef.current = null;
+          void saveRef.current();
+        }, AUTOSAVE_DEBOUNCE_MS);
+      }
+    },
+    [clearAutosaveTimer],
+  );
 
   return { doc, dirty, onChange, save, reload, markSaved };
 }

@@ -1,0 +1,101 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "http://localhost:1423",
+  "elements": [
+    {
+      "id": "abzZLuDlQDsgKHF-9EQVx",
+      "type": "rectangle",
+      "x": 349.234375,
+      "y": 125.953125,
+      "width": 78.6328125,
+      "height": 59.13671875,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "a0",
+      "roundness": {
+        "type": 3
+      },
+      "seed": 286488967,
+      "version": 15,
+      "versionNonce": 2007238281,
+      "isDeleted": false,
+      "boundElements": [],
+      "updated": 1784233443390,
+      "link": null,
+      "locked": false
+    },
+    {
+      "id": "Jvx1wnwvrX8C4Hd-kTID-",
+      "type": "line",
+      "x": 734.76171875,
+      "y": 192.109375,
+      "width": 420.71875,
+      "height": 262.59765625,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "a1",
+      "roundness": {
+        "type": 2
+      },
+      "seed": 2067910889,
+      "version": 72,
+      "versionNonce": 349989417,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1784233625413,
+      "link": null,
+      "locked": false,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -226.98046875,
+          145.49609375
+        ],
+        [
+          -114.89453125,
+          246.578125
+        ],
+        [
+          193.73828125,
+          138.6875
+        ],
+        [
+          -198.9453125,
+          -16.01953125
+        ]
+      ],
+      "lastCommittedPoint": null,
+      "startBinding": null,
+      "endBinding": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    }
+  ],
+  "appState": {
+    "gridSize": 20,
+    "gridStep": 5,
+    "gridModeEnabled": false,
+    "viewBackgroundColor": "#ffffff"
+  },
+  "files": {}
+}

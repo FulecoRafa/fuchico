@@ -24,6 +24,10 @@ import {
   helixModeReporterExtension,
 } from "./lib/helix";
 import { resolveLanguage } from "./lib/languageResolver";
+import {
+  type MermaidOpenPayload,
+  mermaidPreviewExtension,
+} from "./lib/mermaidPreviewExtension";
 import { useDocument } from "./lib/useDocument";
 
 export type EditorPaneHandle = {
@@ -37,6 +41,7 @@ type Props = {
   onDirtyChange?: (dirty: boolean) => void;
   onSaved?: () => void;
   onClose?: () => void;
+  onOpenMermaid?: (payload: MermaidOpenPayload) => void;
   /** 1-based line to select/scroll to. Re-applied whenever `focusToken` changes. */
   focusLine?: number;
   focusToken?: number;
@@ -52,8 +57,15 @@ function formatBytes(n: number): string {
 
 export const EditorPane = forwardRef<EditorPaneHandle, Props>(
   function EditorPane(props, ref) {
-    const { path, onDirtyChange, onSaved, onClose, focusLine, focusToken } =
-      props;
+    const {
+      path,
+      onDirtyChange,
+      onSaved,
+      onClose,
+      onOpenMermaid,
+      focusLine,
+      focusToken,
+    } = props;
     const { doc, onChange, save } = useDocument({ path, onDirtyChange });
     const cmRef = useRef<ReactCodeMirrorRef>(null);
     const [helixMode, setHelixMode] = useState<HelixMode | null>("normal");
@@ -69,6 +81,8 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     onSavedRef.current = onSaved;
     const onCloseRef = useRef(onClose);
     onCloseRef.current = onClose;
+    const onOpenMermaidRef = useRef(onOpenMermaid);
+    onOpenMermaidRef.current = onOpenMermaid;
 
     const performSave = useCallback(async () => {
       await saveRef.current();
@@ -89,6 +103,9 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           close: () => onCloseRef.current?.(),
         })),
         helixModeReporterExtension((mode) => setHelixModeRef.current(mode)),
+        mermaidPreviewExtension((payload) =>
+          onOpenMermaidRef.current?.(payload),
+        ),
         ...buildSharedExtensions(),
         languageCompartment.of([]),
         keymap.of([

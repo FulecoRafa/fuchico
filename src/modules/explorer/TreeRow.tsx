@@ -1,4 +1,4 @@
-import { ChevronRight, File, Folder } from "lucide-react";
+import { ChevronRight, File, Folder, PenTool } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
 
 export type RowActions = {
@@ -80,14 +80,20 @@ function EntryRowImpl(props: EntryRowProps) {
   } = props;
 
   const paddingLeft = 6 + depth * 12;
+  const isExcalidraw = !isDir && name.toLowerCase().endsWith(".excalidraw");
+  const icon = isDir ? (
+    <Folder size={14} />
+  ) : isExcalidraw ? (
+    <PenTool size={14} />
+  ) : (
+    <File size={14} />
+  );
 
   if (isRenaming) {
     return (
       <div className="tree-row" style={{ paddingLeft }}>
         <span className="tree-row-disclosure" />
-        <span className="tree-row-icon">
-          {isDir ? <Folder size={14} /> : <File size={14} />}
-        </span>
+        <span className="tree-row-icon">{icon}</span>
         <InlineInput
           initial={name}
           onCommit={actions.commitRename}
@@ -119,9 +125,7 @@ function EntryRowImpl(props: EntryRowProps) {
       >
         {isDir && <ChevronRight size={12} strokeWidth={2.25} />}
       </span>
-      <span className="tree-row-icon">
-        {isDir ? <Folder size={14} /> : <File size={14} />}
-      </span>
+      <span className="tree-row-icon">{icon}</span>
       <span className="tree-row-name">{name}</span>
     </button>
   );
@@ -132,11 +136,13 @@ export const EntryRow = memo(EntryRowImpl);
 export function PendingRow({
   depth,
   kind,
+  placeholder,
   onCommit,
   onCancel,
 }: {
   depth: number;
   kind: "file" | "dir";
+  placeholder?: string;
   onCommit: (name: string) => void | Promise<void>;
   onCancel: () => void;
 }) {
@@ -148,7 +154,7 @@ export function PendingRow({
       </span>
       <InlineInput
         initial=""
-        placeholder={kind === "dir" ? "New folder" : "New file"}
+        placeholder={placeholder ?? (kind === "dir" ? "New folder" : "New file")}
         onCommit={onCommit}
         onCancel={onCancel}
       />

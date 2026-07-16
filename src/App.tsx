@@ -1,16 +1,38 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import { CalendarClock, Files, FolderOpen, Search } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { AgendaView } from "@/modules/agenda";
 import { EditorPane } from "@/modules/editor";
 import { FileExplorer } from "@/modules/explorer";
 import { SearchPanel } from "@/modules/search";
 import { TabBar, useTabs } from "@/modules/tabs";
 
+// Excalidraw and mermaid both drag in a few MB of transitive deps -- code-split
+// them so opening a folder without any drawings/diagrams stays lightweight.
+const ExcalidrawPane = lazy(() =>
+  import("@/modules/excalidraw").then((m) => ({ default: m.ExcalidrawPane })),
+);
+const MermaidPane = lazy(() =>
+  import("@/modules/mermaid").then((m) => ({ default: m.MermaidPane })),
+);
+
 const LAST_ROOT_KEY = "helix.lastRootPath";
+const MIN_DOCK_WIDTH = 240;
+const MAX_DOCK_WIDTH = 800;
+const DEFAULT_DOCK_WIDTH = 380;
 
 type MainView = "editor" | "agenda" | "search";
+
+type MermaidDock = { blockKey: string; label: string; initialText?: string };
 
 function App() {
   const [rootPath, setRootPath] = useState<string | null>(null);
@@ -25,6 +47,47 @@ function App() {
   } = useTabs();
   const [restoring, setRestoring] = useState(true);
   const [mainView, setMainView] = useState<MainView>("editor");
+  const [mermaidDock, setMermaidDock] = useState<MermaidDock | null>(null);
+  const dockPanelRef = useRef<HTMLDivElement>(null);
+  const dockWidthRef = useRef(DEFAULT_DOCK_WIDTH);
+  const dockResizeRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startWidth: number;
+  } | null>(null);
+
+  const onDockResizePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      e.currentTarget.setPointerCapture(e.pointerId);
+      dockResizeRef.current = {
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startWidth: dockWidthRef.current,
+      };
+    },
+    [],
+  );
+  const onDockResizePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const drag = dockResizeRef.current;
+      if (!drag || drag.pointerId !== e.pointerId) return;
+      const next = Math.min(
+        MAX_DOCK_WIDTH,
+        Math.max(MIN_DOCK_WIDTH, drag.startWidth - (e.clientX - drag.startX)),
+      );
+      dockWidthRef.current = next;
+      if (dockPanelRef.current) dockPanelRef.current.style.width = `${next}px`;
+    },
+    [],
+  );
+  const onDockResizePointerUp = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (dockResizeRef.current?.pointerId === e.pointerId) {
+        dockResizeRef.current = null;
+      }
+    },
+    [],
+  );
 
   // Restore the last opened folder on launch, verifying it still exists
   // (moved/deleted vaults should fall back to the empty state, not a
@@ -67,6 +130,33 @@ function App() {
     },
     [openTab],
   );
+
+  const openMermaid = useCallback(
+    (payload: { blockKey: string; text: string }) => {
+      setMermaidDock({
+        blockKey: payload.blockKey,
+        label: "Diagram",
+        initialText: payload.text,
+      });
+    },
+    [],
+  );
+
+  // A popped-out diagram window asking to be docked back as a side panel; it
+  // closes itself once this fires, and MermaidPane self-requests the current
+  // text since we don't have it here.
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    void listen<{ blockKey: string; label: string }>(
+      "mermaid:dock-request",
+      ({ payload }) => {
+        setMermaidDock({ blockKey: payload.blockKey, label: payload.label });
+      },
+    ).then((fn) => {
+      unlisten = fn;
+    });
+    return () => unlisten?.();
+  }, []);
 
   const activeTab = tabs.find((t) => t.path === activePath) ?? null;
 
@@ -137,33 +227,77 @@ function App() {
           )}
         </div>
         <div className="app-main">
-          {mainView === "agenda" ? (
-            <AgendaView rootPath={rootPath} onOpenItem={openFile} />
-          ) : mainView === "search" ? (
-            <SearchPanel rootPath={rootPath} onOpenMatch={openFile} />
-          ) : (
-            <div className="editor-area">
-              {tabs.length > 0 && (
-                <TabBar
-                  tabs={tabs}
-                  activePath={activePath}
-                  onSelect={setActivePath}
-                  onClose={closeTab}
-                />
-              )}
-              {activeTab ? (
-                <EditorPane
-                  key={activeTab.path}
-                  path={activeTab.path}
-                  focusLine={activeTab.focusLine}
-                  focusToken={activeTab.focusToken}
-                  onDirtyChange={(dirty) => setDirty(activeTab.path, dirty)}
-                  onClose={() => closeTab(activeTab.path)}
-                />
-              ) : (
-                <div className="editor-status">No file open</div>
-              )}
-            </div>
+          <div className="app-main-content">
+            {mainView === "agenda" ? (
+              <AgendaView rootPath={rootPath} onOpenItem={openFile} />
+            ) : mainView === "search" ? (
+              <SearchPanel rootPath={rootPath} onOpenMatch={openFile} />
+            ) : (
+              <div className="editor-area">
+                {tabs.length > 0 && (
+                  <TabBar
+                    tabs={tabs}
+                    activePath={activePath}
+                    onSelect={setActivePath}
+                    onClose={closeTab}
+                  />
+                )}
+                {activeTab ? (
+                  activeTab.path.toLowerCase().endsWith(".excalidraw") ? (
+                    <Suspense
+                      fallback={<div className="editor-status">Loading…</div>}
+                    >
+                      <ExcalidrawPane
+                        key={activeTab.path}
+                        path={activeTab.path}
+                        onDirtyChange={(dirty) =>
+                          setDirty(activeTab.path, dirty)
+                        }
+                      />
+                    </Suspense>
+                  ) : (
+                    <EditorPane
+                      key={activeTab.path}
+                      path={activeTab.path}
+                      focusLine={activeTab.focusLine}
+                      focusToken={activeTab.focusToken}
+                      onDirtyChange={(dirty) => setDirty(activeTab.path, dirty)}
+                      onClose={() => closeTab(activeTab.path)}
+                      onOpenMermaid={openMermaid}
+                    />
+                  )
+                ) : (
+                  <div className="editor-status">No file open</div>
+                )}
+              </div>
+            )}
+          </div>
+          {mermaidDock && (
+            <>
+              <div
+                className="mermaid-dock-resizer"
+                onPointerDown={onDockResizePointerDown}
+                onPointerMove={onDockResizePointerMove}
+                onPointerUp={onDockResizePointerUp}
+              />
+              <div
+                ref={dockPanelRef}
+                className="mermaid-dock-panel"
+                style={{ width: dockWidthRef.current }}
+              >
+                <Suspense
+                  fallback={<div className="editor-status">Loading…</div>}
+                >
+                  <MermaidPane
+                    key={mermaidDock.blockKey}
+                    blockKey={mermaidDock.blockKey}
+                    label={mermaidDock.label}
+                    initialText={mermaidDock.initialText}
+                    onClose={() => setMermaidDock(null)}
+                  />
+                </Suspense>
+              </div>
+            </>
           )}
         </div>
       </div>

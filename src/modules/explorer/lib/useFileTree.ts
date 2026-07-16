@@ -19,6 +19,9 @@ type TreeState = Record<string, ChildrenState>;
 export type PendingCreate = {
   parentPath: string;
   kind: "file" | "dir";
+  /** Appended to the typed name if the user doesn't include a dot. */
+  defaultExt?: string;
+  placeholder?: string;
 };
 
 export function joinPath(parent: string, name: string): string {
@@ -121,9 +124,13 @@ export function useFileTree(rootPath: string | null, options?: Options) {
   );
 
   const beginCreate = useCallback(
-    (parentPath: string, kind: "file" | "dir") => {
+    (
+      parentPath: string,
+      kind: "file" | "dir",
+      opts?: { defaultExt?: string; placeholder?: string },
+    ) => {
       setRenaming(null);
-      setPendingCreate({ parentPath, kind });
+      setPendingCreate({ parentPath, kind, ...opts });
       if (rootPath && parentPath !== rootPath) {
         setExpanded((curr) => {
           if (curr.has(parentPath)) return curr;
@@ -142,10 +149,13 @@ export function useFileTree(rootPath: string | null, options?: Options) {
   const commitCreate = useCallback(
     async (name: string) => {
       if (!pendingCreate) return;
-      const trimmed = name.trim();
+      let trimmed = name.trim();
       if (!trimmed) {
         setPendingCreate(null);
         return;
+      }
+      if (pendingCreate.defaultExt && !trimmed.includes(".")) {
+        trimmed = `${trimmed}.${pendingCreate.defaultExt}`;
       }
       const path = joinPath(pendingCreate.parentPath, trimmed);
       const cmd =
