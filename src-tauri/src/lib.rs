@@ -1,6 +1,7 @@
 mod modules;
 
 use modules::fs::{file, mutate, tree};
+use modules::tasks;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -18,6 +19,8 @@ pub fn run() {
             mutate::fs_create_dir,
             mutate::fs_rename,
             mutate::fs_delete,
+            tasks::tasks_scan,
+            tasks::tasks_toggle,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
