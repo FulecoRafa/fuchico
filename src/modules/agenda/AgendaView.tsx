@@ -5,7 +5,7 @@ import {
   ListTodo,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { type AgendaItem, isRecurrenceDueOn, useAgenda } from "./lib/useAgenda";
+import { type AgendaItem, useAgenda } from "./lib/useAgenda";
 
 type Props = {
   rootPath: string | null;
@@ -14,11 +14,6 @@ type Props = {
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
-}
-
-function parseIsoDate(iso: string): Date {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d);
 }
 
 function basename(path: string): string {
@@ -179,23 +174,13 @@ export function AgendaView({ rootPath, onOpenItem }: Props) {
   const weeks = useMemo(() => monthWeeks(cursor.year, cursor.month), [cursor]);
 
   const dateFiltered = selectedDate ? (byDate.get(selectedDate) ?? []) : items;
-  const referenceDate = selectedDate ? parseIsoDate(selectedDate) : new Date();
-  const referenceIso = selectedDate ?? today;
-  const dueRecurring = items.filter(
-    (i) =>
-      !i.date && i.recurrence && isRecurrenceDueOn(i.recurrence, referenceDate),
+  const overdue = dateFiltered.filter(
+    (i) => !i.checked && i.date && i.date < today,
   );
-  const visible = selectedDate ? [...dateFiltered, ...dueRecurring] : items;
-  const overdue = visible.filter((i) => !i.checked && i.date && i.date < today);
-  const due = visible.filter(
-    (i) =>
-      i.date === referenceIso ||
-      (!i.date &&
-        i.recurrence &&
-        isRecurrenceDueOn(i.recurrence, referenceDate)),
-  );
-  const upcoming = visible.filter((i) => i.date && i.date > today);
-  const noDate = visible.filter((i) => !i.date && !i.recurrence);
+  const due = dateFiltered.filter((i) => i.date === (selectedDate ?? today));
+  const upcoming = dateFiltered.filter((i) => i.date && i.date > today);
+  const noDate = dateFiltered.filter((i) => !i.date && !i.recurrence);
+  const routines = items.filter((i) => i.recurrence);
 
   const onOpen = (item: AgendaItem) => onOpenItem(item.file, item.line);
 
@@ -283,6 +268,29 @@ export function AgendaView({ rootPath, onOpenItem }: Props) {
             Clear filter ({selectedDate})
           </button>
         )}
+        <div className="agenda-routines">
+          <div className="agenda-section-title">Routines</div>
+          {routines.length === 0 && (
+            <div className="agenda-status">
+              No routines yet. Add <code>🔁 daily|weekdays|weekends|mon,…</code>{" "}
+              to a task.
+            </div>
+          )}
+          {routines.map((item) => (
+            <button
+              type="button"
+              key={`${item.file}:${item.line}`}
+              className="agenda-routine-row"
+              onClick={() => onOpen(item)}
+            >
+              <span className="agenda-routine-text">{item.text}</span>
+              <span className="agenda-routine-rule">
+                🔁 {item.recurrence}
+                {item.recurTime ? ` ${item.recurTime}` : ""}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="agenda-list">
