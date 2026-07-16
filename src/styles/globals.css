@@ -92,6 +92,104 @@ input {
   font-family: inherit;
 }
 
+.app-shell {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+.app-activitybar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 40px;
+  flex-shrink: 0;
+  padding-top: 8px;
+  border-right: 1px solid var(--border);
+  background: var(--card);
+}
+
+.app-activitybar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--muted-foreground);
+  border-radius: var(--radius-sm);
+  transition:
+    background-color var(--dur-fast) var(--ease-premium),
+    color var(--dur-fast) var(--ease-premium);
+}
+
+.app-activitybar-btn:hover {
+  background: color-mix(in oklch, var(--foreground) 6%, transparent);
+  color: var(--foreground);
+}
+
+.app-activitybar-btn-active {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.app-layout {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.app-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: color-mix(in oklch, var(--card) 85%, transparent);
+  min-height: 0;
+}
+
+.app-sidebar-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 16px;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xl);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-base) var(--ease-premium),
+    transform var(--dur-fast) var(--ease-premium);
+}
+
+.btn:hover {
+  background: color-mix(in oklch, var(--primary) 80%, transparent);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
 .explorer {
   display: flex;
   flex-direction: column;
