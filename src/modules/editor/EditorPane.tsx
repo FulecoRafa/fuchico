@@ -1,6 +1,6 @@
 import { redo, undo } from "@codemirror/commands";
 import { Prec } from "@codemirror/state";
-import { keymap } from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { helix } from "codemirror-helix";
@@ -37,6 +37,9 @@ type Props = {
   onDirtyChange?: (dirty: boolean) => void;
   onSaved?: () => void;
   onClose?: () => void;
+  /** 1-based line to select/scroll to. Re-applied whenever `focusToken` changes. */
+  focusLine?: number;
+  focusToken?: number;
 };
 
 const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "ico"];
@@ -49,7 +52,8 @@ function formatBytes(n: number): string {
 
 export const EditorPane = forwardRef<EditorPaneHandle, Props>(
   function EditorPane(props, ref) {
-    const { path, onDirtyChange, onSaved, onClose } = props;
+    const { path, onDirtyChange, onSaved, onClose, focusLine, focusToken } =
+      props;
     const { doc, onChange, save } = useDocument({ path, onDirtyChange });
     const cmRef = useRef<ReactCodeMirrorRef>(null);
     const [helixMode, setHelixMode] = useState<HelixMode | null>("normal");
@@ -116,6 +120,20 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         cancelled = true;
       };
     }, [path, doc.status]);
+
+    // biome-ignore lint/correctness/useExhaustiveDependencies: focusToken is the re-trigger signal even when focusLine repeats
+    useEffect(() => {
+      if (!focusLine || doc.status !== "ready") return;
+      const view = cmRef.current?.view;
+      if (!view) return;
+      const lineNumber = Math.min(Math.max(1, focusLine), view.state.doc.lines);
+      const line = view.state.doc.line(lineNumber);
+      view.dispatch({
+        selection: { anchor: line.from, head: line.to },
+        effects: EditorView.scrollIntoView(line.from, { y: "center" }),
+      });
+      view.focus();
+    }, [focusLine, focusToken, doc.status]);
 
     useImperativeHandle(
       ref,
