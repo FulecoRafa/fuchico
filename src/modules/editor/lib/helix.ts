@@ -17,7 +17,11 @@ const MODE_LABEL: Record<string, HelixMode> = {
  * bottom status panel (`.cm-hx-status-panel`) that renders it as text. We
  * read that DOM node on every update to mirror the mode out to a callback
  * (so it can be shown as a chip outside the editor), and hide the panel
- * itself since the chip replaces it.
+ * itself since the chip replaces it. The status panel shares its wrapper
+ * (`.cm-panels-bottom`) with the `:command` input panel, and CodeMirror's
+ * base theme puts a permanent border/background on that wrapper regardless
+ * of whether any panel inside it is visible — strip that chrome too so an
+ * empty wrapper doesn't show as a stray bar when no command is active.
  */
 export function helixModeReporterExtension(
   onMode: (mode: HelixMode) => void,
@@ -31,6 +35,10 @@ export function helixModeReporterExtension(
     }),
     EditorView.theme({
       ".cm-hx-status-panel": { display: "none !important" },
+      ".cm-panels-bottom": {
+        border: "none !important",
+        background: "transparent !important",
+      },
     }),
   ];
 }
