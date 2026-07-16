@@ -355,6 +355,86 @@ input {
   color: var(--destructive);
 }
 
+.editor-area {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.tab-bar {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklch, var(--card) 85%, transparent);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  max-width: 200px;
+  padding: 0 8px 0 10px;
+  height: 32px;
+  border-right: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  transition: background-color var(--dur-fast) var(--ease-premium),
+    color var(--dur-fast) var(--ease-premium);
+}
+
+.tab:hover {
+  background: color-mix(in oklch, var(--foreground) 5%, transparent);
+  color: var(--foreground);
+}
+
+.tab-active {
+  background: var(--background);
+  color: var(--foreground);
+  box-shadow: inset 0 -2px 0 var(--ring);
+}
+
+.tab-dirty-dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--syntax-function);
+}
+
+.tab-name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--muted-foreground);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--dur-fast) var(--ease-premium),
+    color var(--dur-fast) var(--ease-premium);
+}
+
+.tab-close-btn:hover {
+  background: color-mix(in oklch, var(--foreground) 10%, transparent);
+  color: var(--foreground);
+}
+
 .editor-pane {
   position: relative;
   display: flex;

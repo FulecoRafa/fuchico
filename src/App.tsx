@@ -5,20 +5,23 @@ import { useCallback, useEffect, useState } from "react";
 import { AgendaView } from "@/modules/agenda";
 import { EditorPane } from "@/modules/editor";
 import { FileExplorer } from "@/modules/explorer";
+import { TabBar, useTabs } from "@/modules/tabs";
 
 const LAST_ROOT_KEY = "helix.lastRootPath";
 
 type MainView = "editor" | "agenda";
 
-type OpenTarget = {
-  path: string;
-  focusLine?: number;
-  focusToken: number;
-};
-
 function App() {
   const [rootPath, setRootPath] = useState<string | null>(null);
-  const [openTarget, setOpenTarget] = useState<OpenTarget | null>(null);
+  const {
+    tabs,
+    activePath,
+    setActivePath,
+    openFile: openTab,
+    closeTab,
+    setDirty,
+    closeAll,
+  } = useTabs();
   const [restoring, setRestoring] = useState(true);
   const [mainView, setMainView] = useState<MainView>("editor");
 
@@ -51,19 +54,20 @@ function App() {
     const selected = await open({ directory: true, multiple: false });
     if (typeof selected === "string") {
       setRootPath(selected);
-      setOpenTarget(null);
+      closeAll();
       localStorage.setItem(LAST_ROOT_KEY, selected);
     }
-  }, []);
+  }, [closeAll]);
 
-  const openFile = useCallback((path: string, focusLine?: number) => {
-    setOpenTarget((prev) => ({
-      path,
-      focusLine,
-      focusToken: (prev?.path === path ? prev.focusToken : 0) + 1,
-    }));
-    setMainView("editor");
-  }, []);
+  const openFile = useCallback(
+    (path: string, focusLine?: number) => {
+      openTab(path, focusLine);
+      setMainView("editor");
+    },
+    [openTab],
+  );
+
+  const activeTab = tabs.find((t) => t.path === activePath) ?? null;
 
   if (restoring) {
     return <div className="app-layout" />;
@@ -102,7 +106,7 @@ function App() {
           {rootPath ? (
             <FileExplorer
               rootPath={rootPath}
-              activeFilePath={openTarget?.path ?? null}
+              activeFilePath={activePath}
               onOpenFile={(path) => openFile(path)}
               onOpenFolder={() => void handleOpenFolder()}
             />
@@ -122,15 +126,29 @@ function App() {
         <div className="app-main">
           {mainView === "agenda" ? (
             <AgendaView rootPath={rootPath} onOpenItem={openFile} />
-          ) : openTarget ? (
-            <EditorPane
-              key={openTarget.path}
-              path={openTarget.path}
-              focusLine={openTarget.focusLine}
-              focusToken={openTarget.focusToken}
-            />
           ) : (
-            <div className="editor-status">No file open</div>
+            <div className="editor-area">
+              {tabs.length > 0 && (
+                <TabBar
+                  tabs={tabs}
+                  activePath={activePath}
+                  onSelect={setActivePath}
+                  onClose={closeTab}
+                />
+              )}
+              {activeTab ? (
+                <EditorPane
+                  key={activeTab.path}
+                  path={activeTab.path}
+                  focusLine={activeTab.focusLine}
+                  focusToken={activeTab.focusToken}
+                  onDirtyChange={(dirty) => setDirty(activeTab.path, dirty)}
+                  onClose={() => closeTab(activeTab.path)}
+                />
+              ) : (
+                <div className="editor-status">No file open</div>
+              )}
+            </div>
           )}
         </div>
       </div>
