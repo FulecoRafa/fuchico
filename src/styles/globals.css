@@ -91,3 +91,168 @@ button,
 input {
   font-family: inherit;
 }
+
+.explorer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  outline: none;
+  font-size: 13px;
+}
+
+.explorer-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.explorer-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  flex-shrink: 0;
+  padding: 0 6px;
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+}
+
+.explorer-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 12px;
+  color: color-mix(in oklch, var(--foreground) 80%, transparent);
+}
+
+.explorer-header-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--muted-foreground);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--dur-fast) var(--ease-premium),
+    color var(--dur-fast) var(--ease-premium);
+}
+
+.explorer-header-btn:hover {
+  background: color-mix(in oklch, var(--foreground) 6%, transparent);
+  color: var(--foreground);
+}
+
+.explorer-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.explorer-status {
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+.explorer-status-error {
+  color: var(--destructive);
+}
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  width: 100%;
+  min-width: 0;
+  padding-right: 6px;
+  font-size: 13px;
+}
+
+.tree-row-button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: color-mix(in oklch, var(--foreground) 85%, transparent);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--dur-fast) var(--ease-premium);
+}
+
+.tree-row-button:hover {
+  background: color-mix(in oklch, var(--accent) 70%, transparent);
+}
+
+.tree-row-selected {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.tree-row-disclosure {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+  transition: transform var(--dur-fast) var(--ease-premium);
+}
+
+.tree-row-disclosure-expanded {
+  transform: rotate(90deg);
+}
+
+.tree-row-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+}
+
+.tree-row-name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-inline-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--ring);
+  border-radius: var(--radius-sm);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 13px;
+  padding: 1px 4px;
+  outline: none;
+}
+
+.tree-status-row {
+  height: 24px;
+  line-height: 24px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+.tree-status-error {
+  color: var(--destructive);
+}
