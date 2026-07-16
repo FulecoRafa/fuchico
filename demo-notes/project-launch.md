@@ -11,6 +11,8 @@ in the global Tasks & Calendar view.
 - Todo: a bare `TODO: text` line — listed, but not toggleable like a task.
 - Event: a line that *starts* with `📅 YYYY-MM-DD [HH:MM] text` and has no
   checkbox — calendar-only, not actionable.
+- Recurring: add `🔁 daily|weekdays|weekends|mon,tue,... [HH:MM]` to a task
+  or todo line — it shows in Today whenever the rule matches the day.
 
 ## Tasks
 
@@ -19,6 +21,11 @@ in the global Tasks & Calendar view.
 - [ ] Ping design for the final banner 📅 2026-07-22
 - [x] Draft the announcement email
 - [ ] Decide on the launch tagline
+
+## Routines
+
+- [ ] Post standup notes 🔁 weekdays 09:00
+- [ ] Water the office plants 🔁 mon,thu
 
 ## Todos
 
