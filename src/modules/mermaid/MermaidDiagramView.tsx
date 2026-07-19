@@ -1,6 +1,6 @@
+import { usePrefersDark } from "@/lib/usePrefersDark";
 import { RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { usePrefersDark } from "@/lib/usePrefersDark";
 import { renderMermaid } from "./lib/renderMermaid";
 import type { MermaidBlockState } from "./lib/types";
 import { usePanZoom } from "./lib/usePanZoom";

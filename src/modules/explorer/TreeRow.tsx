@@ -154,7 +154,9 @@ export function PendingRow({
       </span>
       <InlineInput
         initial=""
-        placeholder={placeholder ?? (kind === "dir" ? "New folder" : "New file")}
+        placeholder={
+          placeholder ?? (kind === "dir" ? "New folder" : "New file")
+        }
         onCommit={onCommit}
         onCancel={onCancel}
       />

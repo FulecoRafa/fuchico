@@ -1,9 +1,9 @@
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { emit, listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { PanelRightOpen } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { MermaidDiagramView } from "./MermaidDiagramView";
 import type { MermaidBlockState } from "./lib/types";
+import { MermaidDiagramView } from "./MermaidDiagramView";
 
 type Props = { blockKey: string; title: string };
 

@@ -113,11 +113,14 @@ export function useDocument({ path, onDirtyChange }: Options) {
   saveRef.current = save;
 
   // Adopt externally formatted content as the saved baseline.
-  const markSaved = useCallback((content: string) => {
-    clearAutosaveTimer();
-    savedRef.current = content;
-    setDirty(bufferRef.current !== content);
-  }, [clearAutosaveTimer]);
+  const markSaved = useCallback(
+    (content: string) => {
+      clearAutosaveTimer();
+      savedRef.current = content;
+      setDirty(bufferRef.current !== content);
+    },
+    [clearAutosaveTimer],
+  );
 
   const onChange = useCallback(
     (next: string) => {

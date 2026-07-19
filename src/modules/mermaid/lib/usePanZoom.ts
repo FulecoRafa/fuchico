@@ -39,7 +39,10 @@ export function usePanZoom() {
   const zoomAt = useCallback(
     (cx: number, cy: number, factor: number) => {
       const { x, y, scale } = stateRef.current;
-      const nextScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * factor));
+      const nextScale = Math.min(
+        MAX_SCALE,
+        Math.max(MIN_SCALE, scale * factor),
+      );
       const ratio = nextScale / scale;
       stateRef.current = {
         scale: nextScale,

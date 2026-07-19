@@ -1,9 +1,9 @@
 import { emit, listen } from "@tauri-apps/api/event";
 import { ExternalLink } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { MermaidDiagramView } from "./MermaidDiagramView";
 import { openMermaidWindow } from "./lib/mermaidWindow";
 import type { MermaidBlockState } from "./lib/types";
+import { MermaidDiagramView } from "./MermaidDiagramView";
 
 type Props = {
   blockKey: string;

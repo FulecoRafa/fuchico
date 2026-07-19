@@ -7,8 +7,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { EntryRow, PendingRow, type RowActions, StatusRow } from "./TreeRow";
 import { useFileTree } from "./lib/useFileTree";
+import { EntryRow, PendingRow, type RowActions, StatusRow } from "./TreeRow";
 
 type Props = {
   rootPath: string | null;
