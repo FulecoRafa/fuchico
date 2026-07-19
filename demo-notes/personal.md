@@ -3,6 +3,7 @@
 ## Tasks
 
 - [ ] Renew car insurance 📅 2026-07-05
+:::fold Region
 - [ ] Call the dentist for a cleaning
 - [x] Return the library books 📅 2026-07-14
 
@@ -11,6 +12,7 @@
 - [ ] Give the dog food 🔁 daily 08:00
 - [ ] Take out the trash 🔁 mon,thu
 
+:::endfold
 ## Todos
 
 TODO: pick up dry cleaning
