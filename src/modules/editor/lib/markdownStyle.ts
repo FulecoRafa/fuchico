@@ -1,5 +1,5 @@
-import type { Range } from "@codemirror/state";
 import { syntaxTree } from "@codemirror/language";
+import type { Range } from "@codemirror/state";
 import {
   Decoration,
   type DecorationSet,

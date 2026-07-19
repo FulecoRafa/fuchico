@@ -1,3 +1,4 @@
+import type { KeybindingMode } from "@/modules/settings/lib/editorSettings";
 import {
   foldGutter,
   HighlightStyle,
@@ -6,14 +7,46 @@ import {
 } from "@codemirror/language";
 import { lintGutter } from "@codemirror/lint";
 import { search } from "@codemirror/search";
-import { Compartment, EditorState, type Extension } from "@codemirror/state";
+import {
+  Compartment,
+  EditorState,
+  type Extension,
+  Prec,
+} from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { tags as t } from "@lezer/highlight";
+import { vim } from "@replit/codemirror-vim";
+import { helix } from "codemirror-helix";
+import { regionDecorationsExtension } from "./regionDecorations";
+import { regionFoldingExtension } from "./regionFolding";
+import { regionFoldWidgetExtension } from "./regionFoldWidget";
 
 // Compartments allow runtime reconfiguration without rebuilding state.
 export const languageCompartment = new Compartment();
 export const keybindingCompartment = new Compartment();
 export const wrapCompartment = new Compartment();
+export const shortcutsCompartment = new Compartment();
+export const foldRegionCompartment = new Compartment();
+
+export function foldRegionExtensionFor(
+  startMarker: string,
+  endMarker: string,
+): Extension {
+  return [
+    regionFoldWidgetExtension(startMarker),
+    regionFoldingExtension(startMarker, endMarker),
+    regionDecorationsExtension(startMarker, endMarker),
+  ];
+}
+
+/** basicSetup is added before user extensions by @uiw/react-codemirror, so
+ * modal keymaps must be elevated to Prec.highest to win over it. "normal"
+ * uses CodeMirror's own default keymap, i.e. no modal extension at all. */
+export function keybindingExtensionFor(mode: KeybindingMode): Extension {
+  if (mode === "vim") return Prec.highest(vim());
+  if (mode === "helix") return Prec.highest(helix());
+  return [];
+}
 
 // Chevron-style fold markers matching the file explorer's disclosure
 // triangle (rotate-on-open, same path shape) instead of foldGutter's
@@ -318,16 +351,19 @@ const chromeTheme = EditorView.theme({
     fontFamily: "var(--font-sans, inherit)",
     fontSize: "11px",
     fontWeight: "600",
-    backgroundColor: "color-mix(in oklch, var(--syntax-function) 14%, transparent)",
+    backgroundColor:
+      "color-mix(in oklch, var(--syntax-function) 14%, transparent)",
     color: "var(--syntax-function)",
-    border: "1px solid color-mix(in oklch, var(--syntax-function) 40%, transparent)",
+    border:
+      "1px solid color-mix(in oklch, var(--syntax-function) 40%, transparent)",
     borderRadius: "var(--radius-sm)",
     padding: "1px 6px",
     cursor: "pointer",
     verticalAlign: "middle",
   },
   ".cm-mermaid-preview-btn:hover": {
-    backgroundColor: "color-mix(in oklch, var(--syntax-function) 24%, transparent)",
+    backgroundColor:
+      "color-mix(in oklch, var(--syntax-function) 24%, transparent)",
   },
 });
 

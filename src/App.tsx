@@ -1,7 +1,20 @@
+import { AgendaView } from "@/modules/agenda";
+import { EditorPane } from "@/modules/editor";
+import { FileExplorer } from "@/modules/explorer";
+import { SearchPanel } from "@/modules/search";
+import { SettingsView } from "@/modules/settings";
+import { useTheme } from "@/modules/settings/lib/useTheme";
+import { TabBar, useTabs } from "@/modules/tabs";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
-import { CalendarClock, Files, FolderOpen, Search } from "lucide-react";
+import {
+  CalendarClock,
+  Files,
+  FolderOpen,
+  Search,
+  Settings,
+} from "lucide-react";
 import {
   lazy,
   Suspense,
@@ -10,11 +23,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { AgendaView } from "@/modules/agenda";
-import { EditorPane } from "@/modules/editor";
-import { FileExplorer } from "@/modules/explorer";
-import { SearchPanel } from "@/modules/search";
-import { TabBar, useTabs } from "@/modules/tabs";
 
 // Excalidraw and mermaid both drag in a few MB of transitive deps -- code-split
 // them so opening a folder without any drawings/diagrams stays lightweight.
@@ -30,11 +38,12 @@ const MIN_DOCK_WIDTH = 240;
 const MAX_DOCK_WIDTH = 800;
 const DEFAULT_DOCK_WIDTH = 380;
 
-type MainView = "editor" | "agenda" | "search";
+type MainView = "editor" | "agenda" | "search" | "settings";
 
 type MermaidDock = { blockKey: string; label: string; initialText?: string };
 
 function App() {
+  useTheme();
   const [rootPath, setRootPath] = useState<string | null>(null);
   const {
     tabs,
@@ -203,6 +212,18 @@ function App() {
         >
           <Search size={17} strokeWidth={1.75} />
         </button>
+        <button
+          type="button"
+          className={
+            mainView === "settings"
+              ? "app-activitybar-btn app-activitybar-btn-active"
+              : "app-activitybar-btn"
+          }
+          title="Settings"
+          onClick={() => setMainView("settings")}
+        >
+          <Settings size={17} strokeWidth={1.75} />
+        </button>
       </div>
       <div className="app-layout">
         <div className="app-sidebar">
@@ -232,6 +253,8 @@ function App() {
               <AgendaView rootPath={rootPath} onOpenItem={openFile} />
             ) : mainView === "search" ? (
               <SearchPanel rootPath={rootPath} onOpenMatch={openFile} />
+            ) : mainView === "settings" ? (
+              <SettingsView rootPath={rootPath} />
             ) : (
               <div className="editor-area">
                 {tabs.length > 0 && (
