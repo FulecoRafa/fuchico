@@ -27,4 +27,16 @@ serde_json = "1"
 tempfile = "3"
 log = "0.4"
 regex = "1"
+reqwest = { version = "0.13.4", default-features = false, features = ["rustls", "http2"] }
+quick-xml = "0.41.0"
+icalendar = "0.17.12"
+keyring = { version = "4.1.5", features = ["apple-native-keyring-store"] }
+uuid = { version = "1.24.0", features = ["v4"] }
+sha2 = "0.11.0"
+chrono = { version = "0.4.45", features = ["serde"] }
+tokio = { version = "1.53.0", features = ["time", "rt", "macros"] }
+font-kit = "0.14"
+
+[dev-dependencies]
+wiremock = "0.6.5"
 
