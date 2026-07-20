@@ -30,3 +30,7 @@ flowchart LR
     Line 3`"]
     markdown --> newLines
  ```
+
+| Column 1 | Column 2 | Testing | Another test | Column 5 |
+| -------- | -------- | ------- | ------------ | -------- |
+|          | test     | hello   |              |          |

@@ -9,7 +9,8 @@ export type ShortcutAction =
   | "toggleCheckboxAtCursor"
   | "insertDate"
   | "insertDateTime"
-  | "insertRegion";
+  | "insertRegion"
+  | "insertTable";
 
 export type Shortcuts = Record<ShortcutAction, string>;
 
@@ -40,6 +41,7 @@ export const DEFAULT_SETTINGS: EditorSettings = {
     insertDate: "Mod-Shift-d",
     insertDateTime: "Mod-Alt-d",
     insertRegion: "Mod-Shift-r",
+    insertTable: "Mod-Alt-t",
   },
   foldStartMarker: ":::fold",
   foldEndMarker: ":::endfold",

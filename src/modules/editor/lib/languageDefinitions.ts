@@ -65,11 +65,17 @@ export const LANGUAGES: LanguageDefinition[] = [
         Promise.all([
           import("@codemirror/lang-markdown"),
           import("@codemirror/language-data"),
-        ]).then(([{ markdown, markdownLanguage }, { languages }]) =>
-          markdown({ base: markdownLanguage, codeLanguages: languages }),
+          import("@lezer/markdown"),
+        ]).then(([{ markdown, markdownLanguage }, { languages }, { Table }]) =>
+          markdown({
+            base: markdownLanguage,
+            codeLanguages: languages,
+            extensions: Table,
+          }),
         ),
         import("./markdownStyle").then((m) => m.markdownStyle),
         import("./codeBlockStyle").then((m) => m.codeBlockStyle),
+        import("./tableStyle").then((m) => m.tableStyle),
       ]),
   },
   {

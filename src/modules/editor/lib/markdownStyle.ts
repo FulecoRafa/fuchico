@@ -143,6 +143,12 @@ function buildDecorations(view: EditorView): DecorationSet {
       const onCursorLine = nodeLine === cursorLine;
 
       switch (node.name) {
+        case "Table":
+          // Tables are rendered entirely by tableStyle.ts's block-level
+          // widget; don't decorate anything inside (links, emphasis, etc.
+          // inside a cell would collide with that replace decoration).
+          return false;
+
         case "ATXHeading1":
         case "ATXHeading2":
         case "ATXHeading3":

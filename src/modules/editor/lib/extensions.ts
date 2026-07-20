@@ -365,6 +365,128 @@ const chromeTheme = EditorView.theme({
     backgroundColor:
       "color-mix(in oklch, var(--syntax-function) 24%, transparent)",
   },
+
+  // ── Tables ───────────────────────────────────────────────────────────────
+  // .cm-table-wrap's max-width is pinned in JS (see tableStyle.ts) to the
+  // editor's own visible width: .cm-content has no intrinsic width limit
+  // (the editor doesn't line-wrap), so without a hard pixel cap here a wide
+  // table would grow .cm-content itself and scroll the *whole* buffer
+  // horizontally instead of just the table.
+  ".cm-table-container": {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: "4px",
+    margin: "4px 0",
+  },
+  ".cm-table-wrap": {
+    overflowX: "auto",
+    border: "1px solid var(--border)",
+    borderRadius: "var(--radius-md)",
+    flex: "0 1 auto",
+  },
+  ".cm-table-grid": {
+    borderCollapse: "collapse",
+    // auto (not fixed) + min-width so the table fills the available width
+    // when it has few columns, but grows past it (triggering the wrap's
+    // own horizontal scroll) when it has many.
+    tableLayout: "auto",
+    width: "auto",
+    minWidth: "100%",
+    fontFamily: "var(--font-sans, inherit)",
+    fontSize: "13px",
+  },
+  ".cm-table-cell": {
+    border: "1px solid var(--border)",
+    padding: "4px 8px",
+    minWidth: "80px",
+    outline: "none",
+    position: "relative",
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+  },
+  ".cm-table-cell-header": {
+    backgroundColor: "var(--secondary)",
+    fontWeight: "600",
+  },
+  ".cm-table-cell-text": {
+    display: "block",
+    minHeight: "1.4em",
+  },
+  ".cm-table-cell-input": {
+    display: "block",
+    width: "100%",
+    border: "none",
+    outline: "none",
+    background: "transparent",
+    color: "inherit",
+    font: "inherit",
+    fontWeight: "inherit",
+    padding: "0",
+  },
+  ".cm-table-cell-active": {
+    outline: "2px solid var(--primary)",
+    outlineOffset: "-2px",
+  },
+  ".cm-table-cell-editing": {
+    backgroundColor: "color-mix(in oklch, var(--primary) 8%, transparent)",
+    outline: "2px solid var(--primary)",
+    outlineOffset: "-2px",
+    cursor: "text",
+  },
+  ".cm-table-row-controls": {
+    visibility: "hidden",
+    position: "absolute",
+    top: "2px",
+    right: "2px",
+    fontFamily: "var(--font-sans, inherit)",
+    fontSize: "10px",
+    lineHeight: "1",
+    backgroundColor: "var(--background)",
+    color: "var(--muted-foreground)",
+    border: "1px solid var(--border)",
+    borderRadius: "var(--radius-sm)",
+    padding: "1px 4px",
+    cursor: "pointer",
+    transition: "color var(--dur-fast), border-color var(--dur-fast)",
+  },
+  ".cm-table-cell:hover .cm-table-row-controls": {
+    visibility: "visible",
+  },
+  ".cm-table-row-controls:hover": {
+    color: "var(--destructive)",
+    borderColor: "var(--destructive)",
+  },
+  ".cm-table-add-col": {
+    flex: "0 0 auto",
+    fontFamily: "var(--font-sans, inherit)",
+    fontSize: "13px",
+    lineHeight: "1",
+    color: "var(--muted-foreground)",
+    backgroundColor: "var(--background)",
+    border: "1px solid var(--border)",
+    borderRadius: "var(--radius-md)",
+    width: "22px",
+    height: "22px",
+    cursor: "pointer",
+    transition: "color var(--dur-fast), border-color var(--dur-fast)",
+  },
+  ".cm-table-add-col:hover": {
+    color: "var(--primary)",
+    borderColor: "var(--primary)",
+  },
+  ".cm-table-add-row": {
+    fontFamily: "var(--font-sans, inherit)",
+    fontSize: "11px",
+    color: "var(--muted-foreground)",
+    padding: "3px 8px",
+    cursor: "pointer",
+    borderTop: "1px solid var(--border)",
+    transition: "color var(--dur-fast), background-color var(--dur-fast)",
+  },
+  ".cm-table-add-row:hover": {
+    color: "var(--foreground)",
+    backgroundColor: "var(--secondary)",
+  },
 });
 
 const syntaxHighlightStyle = HighlightStyle.define([

@@ -31,6 +31,7 @@ import {
   type MermaidOpenPayload,
   mermaidPreviewExtension,
 } from "./lib/mermaidPreviewExtension";
+import { getScrollPosition, setScrollPosition } from "./lib/scrollPositions";
 import { shortcutsExtension } from "./lib/shortcuts";
 import { useDocument } from "./lib/useDocument";
 import { OutlineOverlay } from "./OutlineOverlay";
@@ -222,6 +223,29 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       });
       view.focus();
     }, [focusLine, focusToken, doc.status]);
+
+    // A new CodeMirror instance is mounted per active tab (see the `key`
+    // on <EditorPane> in App.tsx), so the DOM scroll offset doesn't survive
+    // switching away and back -- restore it from the cache, then keep the
+    // cache updated as the user scrolls.
+    useEffect(() => {
+      if (doc.status !== "ready") return;
+      const view = cmRef.current?.view;
+      if (!view) return;
+      const saved = getScrollPosition(path);
+      if (saved !== undefined) {
+        requestAnimationFrame(() => {
+          view.scrollDOM.scrollTop = saved;
+        });
+      }
+      const scrollDOM = view.scrollDOM;
+      const onScroll = () => setScrollPosition(path, scrollDOM.scrollTop);
+      scrollDOM.addEventListener("scroll", onScroll, { passive: true });
+      return () => {
+        setScrollPosition(path, scrollDOM.scrollTop);
+        scrollDOM.removeEventListener("scroll", onScroll);
+      };
+    }, [path, doc.status]);
 
     useImperativeHandle(
       ref,

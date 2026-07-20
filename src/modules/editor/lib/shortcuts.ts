@@ -1,6 +1,7 @@
 import type { Shortcuts } from "@/modules/settings/lib/editorSettings";
 import { type ChangeSpec, EditorSelection, Prec } from "@codemirror/state";
 import { type Command, type EditorView, keymap } from "@codemirror/view";
+import { DEFAULT_TABLE_MARKDOWN, setTableEdit } from "./tableStyle";
 
 const CHECKBOX_RE = /\[([ xX])\]/;
 
@@ -77,6 +78,47 @@ function insertRegion(
   return true;
 }
 
+function insertTable(view: EditorView): boolean {
+  const { state } = view;
+  const range = state.selection.main;
+  const doc = state.doc;
+
+  const needsLeadingBreak =
+    range.from > 0 && doc.sliceString(range.from - 1, range.from) !== "\n";
+  const needsTrailingBreak =
+    range.to < doc.length && doc.sliceString(range.to, range.to + 1) !== "\n";
+
+  const insert =
+    (needsLeadingBreak ? "\n" : "") +
+    DEFAULT_TABLE_MARKDOWN +
+    (needsTrailingBreak ? "\n" : "");
+  const tableFrom = range.from + (needsLeadingBreak ? 1 : 0);
+
+  // Single transaction: the table's anchor is deterministic (tableFrom),
+  // so there's no need for a second dispatch that re-parses the syntax
+  // tree to find it -- that race could leave the edit-state effect
+  // dispatched against a tree that hadn't caught up yet.
+  //
+  // The selection is placed one char *inside* the table (not at tableFrom,
+  // its exact boundary) so it's fully swallowed by the table widget's
+  // block-replace decoration. Helix draws its own block cursor at
+  // selection.head regardless of DOM focus; at the boundary it renders
+  // clipped right next to the widget as a second, stuck-looking cursor
+  // once focus moves into a cell's <input>.
+  view.dispatch({
+    changes: { from: range.from, to: range.to, insert },
+    selection: EditorSelection.cursor(tableFrom + 1),
+    effects: setTableEdit.of({
+      tableAnchor: tableFrom,
+      activeRow: 0,
+      activeCol: 0,
+      cellEditing: true,
+    }),
+  });
+  view.focus();
+  return true;
+}
+
 export function shortcutsExtension(
   bindings: Shortcuts,
   foldMarkers: { start: string; end: string },
@@ -92,6 +134,7 @@ export function shortcutsExtension(
     insertDateTime: (view) => insertAtCursor(view, formatDateTime(new Date())),
     insertRegion: (view) =>
       insertRegion(view, foldMarkers.start, foldMarkers.end),
+    insertTable: insertTable,
   };
 
   return Prec.highest(

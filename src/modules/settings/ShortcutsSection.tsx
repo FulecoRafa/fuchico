@@ -28,6 +28,11 @@ const ACTIONS: { value: ShortcutAction; label: string; desc: string }[] = [
     label: "Insert fold region",
     desc: "Wrap the selected lines in a foldable region (or insert an empty one at the cursor).",
   },
+  {
+    value: "insertTable",
+    label: "Insert table",
+    desc: "Insert a 2x2 Markdown table at the cursor and start editing the header.",
+  },
 ];
 
 const MODIFIER_KEYS = new Set(["Control", "Meta", "Alt", "Shift"]);
