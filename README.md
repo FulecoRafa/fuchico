@@ -121,6 +121,22 @@ plugin ecosystem.
 | [`regex`](https://github.com/rust-lang/regex) | Task/date scanning |
 | [`uuid`](https://github.com/uuid-rs/uuid), [`sha2`](https://github.com/RustCrypto/hashes) | IDs & hashing |
 
+### Install with Nix
+
+Run Fuchico without installing it:
+
+```bash
+nix run github:FulecoRafa/fuchico
+```
+
+Or add it to your user profile:
+
+```bash
+nix profile add github:FulecoRafa/fuchico
+```
+
+The flake can also be used as an input and exposes `packages.<system>.fuchico`.
+
 ### Development
 
 Requirements: [pnpm](https://pnpm.io/), a Rust toolchain (for Tauri), and the
@@ -264,6 +280,22 @@ de um ecossistema de plugins.
 | [`chrono`](https://github.com/chronotope/chrono) | Manipulação de datas/horas |
 | [`regex`](https://github.com/rust-lang/regex) | Varredura de tarefas/datas |
 | [`uuid`](https://github.com/uuid-rs/uuid), [`sha2`](https://github.com/RustCrypto/hashes) | IDs & hashing |
+
+### Instalação com Nix
+
+Execute o Fuchico sem instalá-lo:
+
+```bash
+nix run github:FulecoRafa/fuchico
+```
+
+Ou adicione-o ao seu perfil de usuário:
+
+```bash
+nix profile add github:FulecoRafa/fuchico
+```
+
+O flake também pode ser usado como input e expõe `packages.<system>.fuchico`.
 
 ### Desenvolvimento
 
