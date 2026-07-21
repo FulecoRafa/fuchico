@@ -3,6 +3,11 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
+#[cfg(not(target_os = "linux"))]
+use keyring::{Entry as KeyringEntry, Error as KeyringError};
+#[cfg(target_os = "linux")]
+use keyring_core::{api::CredentialStoreApi, Entry as KeyringEntry, Error as KeyringError};
+
 use crate::modules::fs::file::write_atomic;
 
 /// Matches `tauri.conf.json`'s `identifier` -- the keyring service name
@@ -71,14 +76,22 @@ pub fn save(app: &AppHandle, config: &Config) -> Result<(), String> {
     write_atomic(&path, &json).map_err(|e| format!("failed to write {}: {e}", path.display()))
 }
 
-/// Wraps `keyring::Entry` with this app's fixed service name and maps every
-/// error to a plain string, since the caller (a Tauri command) can only
-/// return `Result<T, String>` across the IPC boundary. On Linux without a
-/// running Secret Service, every call here fails -- the caller must surface
-/// that as an explicit UI error rather than pretending the password saved.
-fn keyring_entry(account_id: &str) -> Result<keyring::Entry, String> {
-    keyring::Entry::new(KEYRING_SERVICE, account_id)
-        .map_err(|e| format!("keyring unavailable: {e}"))
+/// Creates an entry with this app's fixed service name and maps store errors
+/// to plain strings for Tauri IPC. Linux uses the kernel keyring directly, so
+/// it works without a running Secret Service; other platforms use their native
+/// store through `keyring`'s compatibility API.
+#[cfg(target_os = "linux")]
+fn keyring_entry(account_id: &str) -> Result<KeyringEntry, String> {
+    let store = linux_keyutils_keyring_store::Store::new()
+        .map_err(|e| format!("kernel keyring unavailable: {e}"))?;
+    store
+        .build(KEYRING_SERVICE, account_id, None)
+        .map_err(|e| format!("kernel keyring unavailable: {e}"))
+}
+
+#[cfg(not(target_os = "linux"))]
+fn keyring_entry(account_id: &str) -> Result<KeyringEntry, String> {
+    KeyringEntry::new(KEYRING_SERVICE, account_id).map_err(|e| format!("keyring unavailable: {e}"))
 }
 
 pub fn save_password(account_id: &str, password: &str) -> Result<(), String> {
@@ -99,7 +112,7 @@ pub fn load_password(account_id: &str) -> Result<String, String> {
 pub fn delete_password(account_id: &str) -> Result<(), String> {
     match keyring_entry(account_id)?.delete_credential() {
         Ok(()) => Ok(()),
-        Err(keyring::Error::NoEntry) => Ok(()),
+        Err(KeyringError::NoEntry) => Ok(()),
         Err(e) => Err(format!("failed to delete password from keyring: {e}")),
     }
 }
