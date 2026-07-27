@@ -1,6 +1,8 @@
-import type {
-  CompletionContext,
-  CompletionResult,
+import {
+  type Completion,
+  type CompletionContext,
+  type CompletionResult,
+  pickedCompletion,
 } from "@codemirror/autocomplete";
 import { syntaxTree } from "@codemirror/language";
 import type { Extension, Range } from "@codemirror/state";
@@ -291,7 +293,7 @@ function wikilinkCompletionSource(getVaultFiles: () => readonly string[]) {
       type: "text",
       apply: (
         view: EditorView,
-        _completion: unknown,
+        completion: Completion,
         from: number,
         to: number,
       ) => {
@@ -301,6 +303,9 @@ function wikilinkCompletionSource(getVaultFiles: () => readonly string[]) {
         view.dispatch({
           changes: { from, to, insert },
           selection: { anchor: from + insert.length },
+          // Mark this as a completion pickup so the aggregator's trigger
+          // doesn't immediately reopen the popup on the inserted `[[name`.
+          annotations: pickedCompletion.of(completion),
         });
       },
     }));

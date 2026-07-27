@@ -1,7 +1,9 @@
-import type {
-  CompletionContext,
-  CompletionResult,
-  CompletionSource,
+import {
+  type Completion,
+  type CompletionContext,
+  type CompletionResult,
+  type CompletionSource,
+  pickedCompletion,
 } from "@codemirror/autocomplete";
 import type { EditorView } from "@codemirror/view";
 import { invoke } from "@tauri-apps/api/core";
@@ -101,7 +103,7 @@ function headingCompletionSource(
       type: "text",
       apply: (
         view: EditorView,
-        _completion: unknown,
+        completion: Completion,
         applyFrom: number,
         applyTo: number,
       ) => {
@@ -111,6 +113,8 @@ function headingCompletionSource(
         view.dispatch({
           changes: { from: applyFrom, to: applyTo, insert },
           selection: { anchor: applyFrom + insert.length },
+          // See wikilinks.ts: prevents the aggregator from reopening the popup.
+          annotations: pickedCompletion.of(completion),
         });
       },
     }));

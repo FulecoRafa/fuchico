@@ -14,7 +14,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { editorCompletionExtension } from "./lib/completion";
+import { completionKeymap, editorCompletionExtension } from "./lib/completion";
 import {
   computeDocStats,
   type DocStats,
@@ -170,6 +170,10 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
     const extensions = useMemo(
       () => [
+        // Must precede the keybinding compartment: this Prec.highest keymap
+        // lets Enter/arrows/Escape drive the completion popup instead of being
+        // swallowed by the (also Prec.highest) modal keymap. See completion.ts.
+        completionKeymap,
         // basicSetup is added before user extensions by @uiw/react-codemirror,
         // so helix must be elevated to Prec.highest to win the keymap.
         lineNumberCompartment.of(

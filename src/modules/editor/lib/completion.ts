@@ -1,10 +1,34 @@
 import {
+  acceptCompletion,
   autocompletion,
   type CompletionSource,
+  closeCompletion,
+  moveCompletionSelection,
+  pickedCompletion,
   startCompletion,
 } from "@codemirror/autocomplete";
-import type { Extension } from "@codemirror/state";
-import { EditorView } from "@codemirror/view";
+import { type Extension, Prec } from "@codemirror/state";
+import { EditorView, keymap } from "@codemirror/view";
+
+/**
+ * Keymap that drives the completion popup, kept at `Prec.highest` so it wins
+ * over the modal keymap (`vim`/`helix` are also elevated to `Prec.highest` in
+ * `extensions.ts`, and would otherwise swallow Enter/arrows into the buffer).
+ *
+ * MUST be placed BEFORE the keybinding compartment in the editor's extension
+ * array: within the `Prec.highest` group, ties are broken by tree order, so an
+ * earlier position beats helix. Every command here returns `false` when no
+ * completion is open, so the key falls straight through to the modal keymap in
+ * normal use (Enter still inserts a newline, Escape still exits insert mode).
+ */
+export const completionKeymap: Extension = Prec.highest(
+  keymap.of([
+    { key: "Enter", run: acceptCompletion },
+    { key: "ArrowDown", run: moveCompletionSelection(true) },
+    { key: "ArrowUp", run: moveCompletionSelection(false) },
+    { key: "Escape", run: closeCompletion },
+  ]),
+);
 
 /**
  * Shared autocomplete aggregator for the editor.
@@ -45,6 +69,11 @@ export function editorCompletionExtension(
 
   const completionTrigger = EditorView.updateListener.of((u) => {
     if (!u.docChanged || triggers.length === 0) return;
+    // Don't reopen the popup on the very edit that accepted a completion:
+    // the inserted text usually still matches the trigger (e.g. `[[note`),
+    // which would immediately pop the menu back up.
+    if (u.transactions.some((tr) => tr.annotation(pickedCompletion) != null))
+      return;
     const head = u.state.selection.main.head;
     const line = u.state.doc.lineAt(head);
     const before = line.text.slice(0, head - line.from);
