@@ -13,6 +13,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { editorCompletionExtension } from "./lib/completion";
 import {
   computeDocStats,
   type DocStats,
@@ -44,7 +45,10 @@ import {
 import { getScrollPosition, setScrollPosition } from "./lib/scrollPositions";
 import { shortcutsExtension } from "./lib/shortcuts";
 import { useDocument } from "./lib/useDocument";
-import { wikilinksExtension } from "./lib/wikilinks";
+import {
+  wikilinkCompletionProvider,
+  wikilinksExtension,
+} from "./lib/wikilinks";
 import { OutlineOverlay } from "./OutlineOverlay";
 
 export type EditorPaneHandle = {
@@ -188,6 +192,12 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           onNavigate: (target, focusLine) =>
             onNavigateFileRef.current?.(target, focusLine),
         }),
+        // Single shared autocomplete instance -- every completion feature adds
+        // a provider here rather than its own autocompletion() (which conflict
+        // under codemirror-helix). See lib/completion.ts.
+        editorCompletionExtension([
+          wikilinkCompletionProvider(() => vaultFilesRef.current ?? []),
+        ]),
         docStatsReporterExtension((stats) => setDocStatsRef.current(stats)),
         ...buildSharedExtensions(),
         languageCompartment.of([]),

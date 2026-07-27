@@ -1,8 +1,6 @@
-import {
-  autocompletion,
-  type CompletionContext,
-  type CompletionResult,
-  startCompletion,
+import type {
+  CompletionContext,
+  CompletionResult,
 } from "@codemirror/autocomplete";
 import { syntaxTree } from "@codemirror/language";
 import type { Extension, Range } from "@codemirror/state";
@@ -14,6 +12,7 @@ import {
   type ViewUpdate,
   WidgetType,
 } from "@codemirror/view";
+import type { CompletionProvider } from "./completion";
 import { fuzzyMatch } from "./fuzzyMatch";
 
 /**
@@ -23,13 +22,13 @@ import { fuzzyMatch } from "./fuzzyMatch";
  * widget on every line except the one the cursor is on, so the source text
  * stays editable in place.
  *
- * `[[`-completion owns a dedicated `autocompletion()` instance (basicSetup's
- * is turned off in EditorPane) rather than registering through the
+ * `[[`-completion is contributed as a provider to the editor's shared
+ * completion aggregator (`completion.ts`) rather than registering through the
  * `EditorState.languageData` facet: basicSetup bundles its own
  * `@codemirror/autocomplete` copy that never picked up the facet entry, and
  * `codemirror-helix` neither emits the `input.type` userEvent that drives
- * `activateOnTyping` nor lets Ctrl-Space through -- so the popup is opened
- * explicitly via `startCompletion` from an update listener (see below).
+ * `activateOnTyping` nor lets Ctrl-Space through -- so the aggregator opens
+ * the popup explicitly via `startCompletion` from an update listener.
  */
 
 // ─── Path helpers ──────────────────────────────────────────────────────────
@@ -51,7 +50,10 @@ function basenameNoExt(path: string): string {
 }
 
 /** Joins `relative` onto the directory of `basePath`, resolving `.`/`..`. */
-export function resolveRelativePath(basePath: string, relative: string): string {
+export function resolveRelativePath(
+  basePath: string,
+  relative: string,
+): string {
   const isAbsolute = basePath.startsWith("/");
   const dir = dirnameOf(basePath);
   const parts = dir.split("/").filter(Boolean);
@@ -130,7 +132,9 @@ class WikilinkWidget extends WidgetType {
   }
 
   eq(other: WikilinkWidget): boolean {
-    return other.label === this.label && other.resolvedPath === this.resolvedPath;
+    return (
+      other.label === this.label && other.resolvedPath === this.resolvedPath
+    );
   }
 
   toDOM(): HTMLElement {
@@ -176,7 +180,9 @@ function buildDecorations(
   onNavigate: (path: string, focusLine?: number) => void,
 ): DecorationSet {
   const decorations: Range<Decoration>[] = [];
-  const cursorLine = view.state.doc.lineAt(view.state.selection.main.head).number;
+  const cursorLine = view.state.doc.lineAt(
+    view.state.selection.main.head,
+  ).number;
   const files = getVaultFiles();
 
   for (const { from, to } of view.visibleRanges) {
@@ -212,7 +218,9 @@ function buildDecorations(
     }
   }
 
-  decorations.sort((a, b) => a.from - b.from || a.to - a.from - (b.to - b.from));
+  decorations.sort(
+    (a, b) => a.from - b.from || a.to - a.from - (b.to - b.from),
+  );
   return Decoration.set(decorations, true);
 }
 
@@ -267,7 +275,9 @@ function wikilinkCompletionSource(getVaultFiles: () => readonly string[]) {
         const match = fuzzyMatch(query, label);
         return match.matched ? { path, label, score: match.score } : null;
       })
-      .filter((x): x is { path: string; label: string; score: number } => x !== null)
+      .filter(
+        (x): x is { path: string; label: string; score: number } => x !== null,
+      )
       .sort((a, b) => b.score - a.score)
       .slice(0, MAX_COMPLETIONS);
 
@@ -279,7 +289,12 @@ function wikilinkCompletionSource(getVaultFiles: () => readonly string[]) {
       label,
       detail: path,
       type: "text",
-      apply: (view: EditorView, _completion: unknown, from: number, to: number) => {
+      apply: (
+        view: EditorView,
+        _completion: unknown,
+        from: number,
+        to: number,
+      ) => {
         const after = view.state.doc.sliceString(to, to + 2);
         const hasClose = after === "]]";
         const insert = hasClose ? label : `${label}]]`;
@@ -317,7 +332,11 @@ export function wikilinksExtension(opts: WikilinksOptions): Extension {
       }
       update(u: ViewUpdate) {
         if (u.docChanged || u.viewportChanged || u.selectionSet) {
-          this.decorations = buildDecorations(u.view, getVaultFiles, onNavigate);
+          this.decorations = buildDecorations(
+            u.view,
+            getVaultFiles,
+            onNavigate,
+          );
         }
       }
     },
@@ -328,28 +347,20 @@ export function wikilinksExtension(opts: WikilinksOptions): Extension {
     click: wikilinkClickHandler(currentPath, onNavigate),
   });
 
-  // Own the autocompletion instance (basicSetup's is disabled in EditorPane)
-  // so the source, the popup, and `startCompletion` below all come from the
-  // same `@codemirror/autocomplete` module -- registering via `languageData`
-  // for basicSetup's bundled copy silently did nothing.
-  const completion = autocompletion({
-    override: [wikilinkCompletionSource(getVaultFiles)],
-    activateOnTyping: true,
-  });
+  return [decorationPlugin, clickHandler];
+}
 
-  // `codemirror-helix`'s insert-mode input doesn't emit the `input.type`
-  // userEvent that autocompletion's `activateOnTyping` listens for, and it
-  // swallows Ctrl-Space, so neither the automatic nor the manual trigger
-  // fires. Detect a `[[…` context after each edit and open the popup
-  // explicitly instead.
-  const completionTrigger = EditorView.updateListener.of((u) => {
-    if (!u.docChanged) return;
-    const { state } = u;
-    const head = state.selection.main.head;
-    const line = state.doc.lineAt(head);
-    const before = line.text.slice(0, head - line.from);
-    if (WIKILINK_TRIGGER_RE.test(before)) startCompletion(u.view);
-  });
-
-  return [decorationPlugin, clickHandler, completion, completionTrigger];
+/**
+ * `[[note]]` completion, contributed to the editor's shared completion
+ * aggregator (see `completion.ts`). The popup, source, and explicit-open
+ * trigger all live in that single `autocompletion()` instance; here we only
+ * provide the source and the `[[…` trigger predicate.
+ */
+export function wikilinkCompletionProvider(
+  getVaultFiles: () => readonly string[],
+): CompletionProvider {
+  return {
+    source: wikilinkCompletionSource(getVaultFiles),
+    trigger: (before) => WIKILINK_TRIGGER_RE.test(before),
+  };
 }
