@@ -1,3 +1,4 @@
+export { EditorBehaviorSection } from "./EditorBehaviorSection";
 export { FoldingSection } from "./FoldingSection";
 export { FontSection } from "./FontSection";
 export { KeybindingSection } from "./KeybindingSection";

@@ -1,4 +1,5 @@
 import { useEditorSettings } from "@/modules/settings/lib/editorSettings";
+import { StatusBar } from "@/modules/statusbar";
 import { redo, undo } from "@codemirror/commands";
 import { EditorView, keymap } from "@codemirror/view";
 import { convertFileSrc } from "@tauri-apps/api/core";
@@ -13,12 +14,21 @@ import {
   useState,
 } from "react";
 import {
+  computeDocStats,
+  type DocStats,
+  docStatsReporterExtension,
+} from "./lib/docStats";
+import {
   buildSharedExtensions,
   foldRegionCompartment,
   foldRegionExtensionFor,
+  indentCompartment,
+  indentExtensionFor,
   keybindingCompartment,
   keybindingExtensionFor,
   languageCompartment,
+  lineNumberCompartment,
+  lineNumbersExtensionFor,
   shortcutsCompartment,
 } from "./lib/extensions";
 import {
@@ -89,10 +99,18 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     const setHelixModeRef = useRef(setHelixMode);
     setHelixModeRef.current = setHelixMode;
     const [outlineOpen, setOutlineOpen] = useState(false);
+    const [docStats, setDocStats] = useState<DocStats>({
+      words: 0,
+      readingTimeMin: 0,
+    });
+    const setDocStatsRef = useRef(setDocStats);
+    setDocStatsRef.current = setDocStats;
     // The compartment's initial content is read once when `extensions` is
     // built; later changes to keybindingMode are picked up by the effect
     // below via view.dispatch(reconfigure), not by re-running useMemo.
     const initialKeybindingModeRef = useRef(settings.keybindingMode);
+    const initialRelativeLineNumbersRef = useRef(settings.relativeLineNumbers);
+    const initialTabSizeRef = useRef(settings.tabSize);
 
     // Stabilize save/onSaved/onClose via refs so `extensions` never changes
     // identity — a new identity makes @uiw/react-codemirror reconfigure the
@@ -134,6 +152,10 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       () => [
         // basicSetup is added before user extensions by @uiw/react-codemirror,
         // so helix must be elevated to Prec.highest to win the keymap.
+        lineNumberCompartment.of(
+          lineNumbersExtensionFor(initialRelativeLineNumbersRef.current),
+        ),
+        indentCompartment.of(indentExtensionFor(initialTabSizeRef.current)),
         keybindingCompartment.of(
           keybindingExtensionFor(initialKeybindingModeRef.current),
         ),
@@ -166,6 +188,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           onNavigate: (target, focusLine) =>
             onNavigateFileRef.current?.(target, focusLine),
         }),
+        docStatsReporterExtension((stats) => setDocStatsRef.current(stats)),
         ...buildSharedExtensions(),
         languageCompartment.of([]),
         keymap.of([
@@ -191,6 +214,26 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         ),
       });
     }, [settings.keybindingMode]);
+
+    useEffect(() => {
+      const view = cmRef.current?.view;
+      if (!view) return;
+      view.dispatch({
+        effects: lineNumberCompartment.reconfigure(
+          lineNumbersExtensionFor(settings.relativeLineNumbers),
+        ),
+      });
+    }, [settings.relativeLineNumbers]);
+
+    useEffect(() => {
+      const view = cmRef.current?.view;
+      if (!view) return;
+      view.dispatch({
+        effects: indentCompartment.reconfigure(
+          indentExtensionFor(settings.tabSize),
+        ),
+      });
+    }, [settings.tabSize]);
 
     useEffect(() => {
       const view = cmRef.current?.view;
@@ -234,6 +277,16 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         cancelled = true;
       };
     }, [path, doc.status]);
+
+    // docStatsReporterExtension keeps stats live as the user types, but it
+    // only fires on doc-changed CM transactions -- the initial load (and any
+    // external reload) needs its own recompute since those replace `value`
+    // without going through that listener.
+    const readyContent = doc.status === "ready" ? doc.content : null;
+    useEffect(() => {
+      if (readyContent === null) return;
+      setDocStats(computeDocStats(readyContent));
+    }, [readyContent]);
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: focusToken is the re-trigger signal even when focusLine repeats
     useEffect(() => {
@@ -321,37 +374,45 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
 
     return (
       <div className="editor-pane">
-        <CodeMirror
-          ref={cmRef}
-          value={doc.content}
-          onChange={onChange}
-          extensions={extensions}
-          theme="none"
-          height="100%"
-          className="editor-codemirror"
-          basicSetup={{
-            lineNumbers: true,
-            highlightActiveLineGutter: true,
-            foldGutter: false,
-            bracketMatching: true,
-            closeBrackets: true,
-            autocompletion: true,
-            highlightActiveLine: true,
-            highlightSelectionMatches: true,
-            searchKeymap: true,
-          }}
-        />
-        {settings.keybindingMode === "helix" && helixMode && (
-          <div className="helix-mode-chip" title={`Helix mode: ${helixMode}`}>
-            {helixMode}
-          </div>
-        )}
-        {outlineOpen && (
-          <OutlineOverlay
-            view={cmRef.current?.view ?? null}
-            onClose={() => setOutlineOpen(false)}
+        <div className="editor-canvas">
+          <CodeMirror
+            ref={cmRef}
+            value={doc.content}
+            onChange={onChange}
+            extensions={extensions}
+            theme="none"
+            height="100%"
+            className="editor-codemirror"
+            basicSetup={{
+              // Provided via lineNumberCompartment instead so relative mode
+              // can be reconfigured at runtime (see extensions.ts).
+              lineNumbers: false,
+              highlightActiveLineGutter: true,
+              foldGutter: false,
+              bracketMatching: true,
+              closeBrackets: true,
+              // Wikilinks owns its own autocompletion() instance (see
+              // wikilinks.ts) so its source and startCompletion share one
+              // @codemirror/autocomplete module; two instances would fight.
+              autocompletion: false,
+              highlightActiveLine: true,
+              highlightSelectionMatches: true,
+              searchKeymap: true,
+            }}
           />
-        )}
+          {settings.keybindingMode === "helix" && helixMode && (
+            <div className="helix-mode-chip" title={`Helix mode: ${helixMode}`}>
+              {helixMode}
+            </div>
+          )}
+          {outlineOpen && (
+            <OutlineOverlay
+              view={cmRef.current?.view ?? null}
+              onClose={() => setOutlineOpen(false)}
+            />
+          )}
+        </div>
+        <StatusBar stats={docStats} />
       </div>
     );
   },

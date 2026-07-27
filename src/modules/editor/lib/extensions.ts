@@ -13,7 +13,7 @@ import {
   type Extension,
   Prec,
 } from "@codemirror/state";
-import { EditorView } from "@codemirror/view";
+import { EditorView, lineNumbers } from "@codemirror/view";
 import { tags as t } from "@lezer/highlight";
 import { vim } from "@replit/codemirror-vim";
 import { helix } from "codemirror-helix";
@@ -27,6 +27,41 @@ export const keybindingCompartment = new Compartment();
 export const wrapCompartment = new Compartment();
 export const shortcutsCompartment = new Compartment();
 export const foldRegionCompartment = new Compartment();
+export const lineNumberCompartment = new Compartment();
+export const indentCompartment = new Compartment();
+
+/** Absolute gutter by default; in relative mode the active line still shows
+ * its absolute number (Helix/Vim convention) while every other line shows
+ * its distance from the cursor. The redraw listener is required because
+ * @codemirror/view's line-number gutter only repaints when the `lineNumbers`
+ * facet's *identity* changes, not on plain selection changes -- so every
+ * cursor move reconfigures the compartment with a fresh (but equivalent)
+ * extension to force a repaint. */
+export function lineNumbersExtensionFor(relative: boolean): Extension {
+  if (!relative) return lineNumbers();
+  return [
+    lineNumbers({
+      formatNumber: (lineNo, state) => {
+        const current = state.doc.lineAt(state.selection.main.head).number;
+        return lineNo === current
+          ? String(lineNo)
+          : String(Math.abs(lineNo - current));
+      },
+    }),
+    EditorView.updateListener.of((update) => {
+      if (!update.selectionSet || update.docChanged) return;
+      update.view.dispatch({
+        effects: lineNumberCompartment.reconfigure(
+          lineNumbersExtensionFor(true),
+        ),
+      });
+    }),
+  ];
+}
+
+export function indentExtensionFor(tabSize: number): Extension {
+  return [indentUnit.of(" ".repeat(tabSize)), EditorState.tabSize.of(tabSize)];
+}
 
 export function foldRegionExtensionFor(
   startMarker: string,
@@ -540,8 +575,6 @@ const syntaxHighlightStyle = HighlightStyle.define([
 ]);
 
 const SHARED_EXTENSIONS: readonly Extension[] = Object.freeze([
-  indentUnit.of("  "),
-  EditorState.tabSize.of(2),
   search({ top: true }),
   lintGutter(),
   foldGutter({ markerDOM: makeFoldMarker }),

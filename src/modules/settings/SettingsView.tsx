@@ -1,5 +1,6 @@
 import { RefreshCw, Trash2 } from "lucide-react";
 import { AccountForm } from "./AccountForm";
+import { EditorBehaviorSection } from "./EditorBehaviorSection";
 import { FolderLinkTable } from "./FolderLinkTable";
 import { FoldingSection } from "./FoldingSection";
 import { FontSection } from "./FontSection";
@@ -30,6 +31,8 @@ export function SettingsView({ rootPath }: Props) {
       <FontSection />
 
       <KeybindingSection />
+
+      <EditorBehaviorSection />
 
       <ShortcutsSection />
 

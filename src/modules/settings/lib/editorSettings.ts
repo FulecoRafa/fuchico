@@ -26,6 +26,11 @@ export type EditorSettings = {
   uiFont: string;
   /** Editor font family (--font-mono). Empty string = default stack. */
   editorFont: string;
+  /** Helix/Vim-style gutter: current line shows its absolute number, all
+   * other lines show their distance from it. */
+  relativeLineNumbers: boolean;
+  /** Number of spaces per indent level / tab stop. */
+  tabSize: number;
 };
 
 const STORAGE_KEY = "helix.editorSettings";
@@ -47,6 +52,8 @@ export const DEFAULT_SETTINGS: EditorSettings = {
   foldEndMarker: ":::endfold",
   uiFont: "",
   editorFont: "",
+  relativeLineNumbers: false,
+  tabSize: 2,
 };
 
 function load(): EditorSettings {
