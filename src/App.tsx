@@ -1,6 +1,12 @@
 import { AgendaView } from "@/modules/agenda";
 import { EditorPane, useVaultFiles } from "@/modules/editor";
 import { FileExplorer } from "@/modules/explorer";
+import {
+  buildAppCommands,
+  CommandPalette,
+  QuickSwitcher,
+  usePaletteShortcuts,
+} from "@/modules/palette";
 import { SearchPanel } from "@/modules/search";
 import { SettingsView } from "@/modules/settings";
 import { useTheme } from "@/modules/settings/lib/useTheme";
@@ -20,6 +26,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -58,6 +65,8 @@ function App() {
   const vaultFiles = useVaultFiles(rootPath);
   const [mainView, setMainView] = useState<MainView>("editor");
   const [mermaidDock, setMermaidDock] = useState<MermaidDock | null>(null);
+  const [quickSwitcherOpen, setQuickSwitcherOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const dockPanelRef = useRef<HTMLDivElement>(null);
   const dockWidthRef = useRef(DEFAULT_DOCK_WIDTH);
   const dockResizeRef = useRef<{
@@ -169,6 +178,28 @@ function App() {
   }, []);
 
   const activeTab = tabs.find((t) => t.path === activePath) ?? null;
+
+  usePaletteShortcuts({
+    onOpenQuickSwitcher: () => setQuickSwitcherOpen(true),
+    onOpenCommandPalette: () => setCommandPaletteOpen(true),
+  });
+
+  const commands = useMemo(
+    () =>
+      buildAppCommands({
+        setMainView,
+        openFolder: () => void handleOpenFolder(),
+        openQuickSwitcher: () => setQuickSwitcherOpen(true),
+        closeActiveTab: () => {
+          if (activePath) closeTab(activePath);
+        },
+        closeAllTabs: closeAll,
+        hasRootPath: rootPath !== null,
+        hasActiveTab: activePath !== null,
+        hasOpenTabs: tabs.length > 0,
+      }),
+    [handleOpenFolder, activePath, closeTab, closeAll, rootPath, tabs.length],
+  );
 
   if (restoring) {
     return <div className="app-layout" />;
@@ -327,6 +358,19 @@ function App() {
           )}
         </div>
       </div>
+      {quickSwitcherOpen && (
+        <QuickSwitcher
+          rootPath={rootPath}
+          onOpenFile={(path) => openFile(path)}
+          onClose={() => setQuickSwitcherOpen(false)}
+        />
+      )}
+      {commandPaletteOpen && (
+        <CommandPalette
+          commands={commands}
+          onClose={() => setCommandPaletteOpen(false)}
+        />
+      )}
     </div>
   );
 }

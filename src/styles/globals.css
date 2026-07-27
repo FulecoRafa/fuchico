@@ -1700,6 +1700,92 @@ input {
   color: var(--muted-foreground);
 }
 
+/* ── Quick switcher / command palette (src/modules/palette) ────────────── */
+
+.palette-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  padding-top: 10%;
+  background: color-mix(in oklch, black 25%, transparent);
+}
+
+.palette-overlay {
+  width: min(560px, 90%);
+  max-height: 60%;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 32px color-mix(in oklch, black 30%, transparent);
+  overflow: hidden;
+}
+
+.palette-overlay-input {
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+  font-size: 13px;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.palette-overlay-list {
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.palette-overlay-empty {
+  padding: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.palette-overlay-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+}
+
+.palette-overlay-item-active {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.palette-overlay-icon {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+}
+
+.palette-overlay-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-overlay-highlight {
+  background: color-mix(in oklch, var(--syntax-number) 35%, transparent);
+  color: inherit;
+  border-radius: 2px;
+}
+
 /* ── Custom fold regions (:::fold / :::endfold) ─────────────────────────── */
 
 .cm-region-start-line,
