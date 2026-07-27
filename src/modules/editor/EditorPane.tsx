@@ -34,6 +34,7 @@ import {
 import { getScrollPosition, setScrollPosition } from "./lib/scrollPositions";
 import { shortcutsExtension } from "./lib/shortcuts";
 import { useDocument } from "./lib/useDocument";
+import { wikilinksExtension } from "./lib/wikilinks";
 import { OutlineOverlay } from "./OutlineOverlay";
 
 export type EditorPaneHandle = {
@@ -51,6 +52,13 @@ type Props = {
   /** 1-based line to select/scroll to. Re-applied whenever `focusToken` changes. */
   focusLine?: number;
   focusToken?: number;
+  /** Absolute paths of every Markdown file in the vault, for wikilink
+   * resolution/autocomplete. Read via a ref, so updates don't reconfigure
+   * the editor. */
+  vaultFiles?: string[];
+  /** Navigates to another file, e.g. from a clicked wikilink or relative
+   * Markdown link. Mirrors `openFile` from useTabs. */
+  onNavigateFile?: (path: string, focusLine?: number) => void;
 };
 
 const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "ico"];
@@ -71,6 +79,8 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       onOpenMermaid,
       focusLine,
       focusToken,
+      vaultFiles,
+      onNavigateFile,
     } = props;
     const { doc, onChange, save } = useDocument({ path, onDirtyChange });
     const { settings } = useEditorSettings();
@@ -95,6 +105,10 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     onCloseRef.current = onClose;
     const onOpenMermaidRef = useRef(onOpenMermaid);
     onOpenMermaidRef.current = onOpenMermaid;
+    const vaultFilesRef = useRef(vaultFiles);
+    vaultFilesRef.current = vaultFiles;
+    const onNavigateFileRef = useRef(onNavigateFile);
+    onNavigateFileRef.current = onNavigateFile;
 
     const performSave = useCallback(async () => {
       await saveRef.current();
@@ -111,6 +125,11 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     });
     const openOutlineRef = useRef(() => setOutlineOpen(true));
 
+    // `path` is read below (wikilinksExtension's currentPath) but intentionally
+    // excluded from deps -- EditorPane remounts via `key={path}` in App.tsx on
+    // every path change, so it's already constant for this instance's lifetime,
+    // same as every other value stabilized via ref above.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
     const extensions = useMemo(
       () => [
         // basicSetup is added before user extensions by @uiw/react-codemirror,
@@ -141,6 +160,12 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         mermaidPreviewExtension((payload) =>
           onOpenMermaidRef.current?.(payload),
         ),
+        wikilinksExtension({
+          getVaultFiles: () => vaultFilesRef.current ?? [],
+          currentPath: path,
+          onNavigate: (target, focusLine) =>
+            onNavigateFileRef.current?.(target, focusLine),
+        }),
         ...buildSharedExtensions(),
         languageCompartment.of([]),
         keymap.of([

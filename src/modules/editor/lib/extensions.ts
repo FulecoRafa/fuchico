@@ -289,6 +289,21 @@ const chromeTheme = EditorView.theme({
     color: "var(--foreground)",
   },
 
+  ".cm-wikilink": {
+    color: "var(--syntax-function)",
+    textDecoration: "none",
+    borderBottom: "1px solid color-mix(in oklch, var(--syntax-function) 45%, transparent)",
+    cursor: "pointer",
+  },
+  ".cm-wikilink:hover": {
+    color: "var(--foreground)",
+    borderBottomColor: "var(--foreground)",
+  },
+  ".cm-wikilink-unresolved": {
+    color: "var(--muted-foreground)",
+    borderBottomStyle: "dashed",
+  },
+
   // ── Fenced code blocks ──────────────────────────────────────────────────
   ".cm-fence-header, .cm-fence-body, .cm-fence-footer": {
     backgroundColor: "var(--secondary)",

@@ -71,6 +71,7 @@ pub fn run() {
             file::fs_stat,
             file::fs_canonicalize,
             tree::fs_read_dir,
+            tree::fs_list_markdown_files,
             mutate::fs_create_file,
             mutate::fs_create_dir,
             mutate::fs_rename,

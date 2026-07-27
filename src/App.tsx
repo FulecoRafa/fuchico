@@ -1,5 +1,5 @@
 import { AgendaView } from "@/modules/agenda";
-import { EditorPane } from "@/modules/editor";
+import { EditorPane, useVaultFiles } from "@/modules/editor";
 import { FileExplorer } from "@/modules/explorer";
 import { SearchPanel } from "@/modules/search";
 import { SettingsView } from "@/modules/settings";
@@ -55,6 +55,7 @@ function App() {
     closeAll,
   } = useTabs();
   const [restoring, setRestoring] = useState(true);
+  const vaultFiles = useVaultFiles(rootPath);
   const [mainView, setMainView] = useState<MainView>("editor");
   const [mermaidDock, setMermaidDock] = useState<MermaidDock | null>(null);
   const dockPanelRef = useRef<HTMLDivElement>(null);
@@ -287,6 +288,8 @@ function App() {
                       onDirtyChange={(dirty) => setDirty(activeTab.path, dirty)}
                       onClose={() => closeTab(activeTab.path)}
                       onOpenMermaid={openMermaid}
+                      vaultFiles={vaultFiles}
+                      onNavigateFile={openFile}
                     />
                   )
                 ) : (
