@@ -33,6 +33,7 @@ import {
   lineNumbersExtensionFor,
   shortcutsCompartment,
 } from "./lib/extensions";
+import { headingCompletionProvider } from "./lib/headingCompletion";
 import {
   type HelixMode,
   helixHandlersExtension,
@@ -50,6 +51,7 @@ import {
   wikilinkCompletionProvider,
   wikilinksExtension,
 } from "./lib/wikilinks";
+import { wordCompletionProvider } from "./lib/wordCompletion";
 import { OutlineOverlay } from "./OutlineOverlay";
 
 export type EditorPaneHandle = {
@@ -198,6 +200,10 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         // under codemirror-helix). See lib/completion.ts.
         editorCompletionExtension([
           wikilinkCompletionProvider(() => vaultFilesRef.current ?? []),
+          // `[[Note#heading]]` / `[[#heading]]` heading-reference completion.
+          headingCompletionProvider(() => vaultFilesRef.current ?? []),
+          // Plain-text word completion from words already in the document.
+          wordCompletionProvider(),
         ]),
         docStatsReporterExtension((stats) => setDocStatsRef.current(stats)),
         frontmatterExtension(),
