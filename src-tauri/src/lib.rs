@@ -7,6 +7,7 @@ use modules::caldav::commands as caldav;
 use modules::fonts;
 use modules::fs::{file, mutate, tree};
 use modules::search;
+use modules::tags;
 use modules::tasks;
 use tauri::Listener;
 
@@ -78,6 +79,7 @@ pub fn run() {
             mutate::fs_delete,
             tasks::tasks_scan,
             tasks::tasks_toggle,
+            tags::tags_scan,
             search::search_files,
             caldav::caldav_test_connection,
             caldav::caldav_discover_calendars,

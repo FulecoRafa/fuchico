@@ -352,6 +352,20 @@ const chromeTheme = EditorView.theme({
     opacity: "0.85",
   },
 
+  // ── Tags (#tag pills) ───────────────────────────────────────────────────
+  ".cm-tag": {
+    color: "var(--syntax-keyword)",
+    backgroundColor:
+      "color-mix(in oklch, var(--syntax-keyword) 12%, transparent)",
+    borderRadius: "999px",
+    padding: "0 6px",
+    cursor: "pointer",
+  },
+  ".cm-tag:hover": {
+    backgroundColor:
+      "color-mix(in oklch, var(--syntax-keyword) 22%, transparent)",
+  },
+
   // ── Fenced code blocks ──────────────────────────────────────────────────
   ".cm-fence-header, .cm-fence-body, .cm-fence-footer": {
     backgroundColor: "var(--secondary)",

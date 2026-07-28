@@ -46,6 +46,7 @@ import {
 } from "./lib/mermaidPreviewExtension";
 import { getScrollPosition, setScrollPosition } from "./lib/scrollPositions";
 import { shortcutsExtension } from "./lib/shortcuts";
+import { tagCompletionProvider, tagsExtension } from "./lib/tags";
 import { useDocument } from "./lib/useDocument";
 import {
   wikilinkCompletionProvider,
@@ -76,6 +77,12 @@ type Props = {
   /** Navigates to another file, e.g. from a clicked wikilink or relative
    * Markdown link. Mirrors `openFile` from useTabs. */
   onNavigateFile?: (path: string, focusLine?: number) => void;
+  /** Every known tag in the vault, for `#` autocomplete. Read via a ref,
+   * like `vaultFiles`. */
+  getAllTags?: () => readonly string[];
+  /** Called with the tag text (no leading `#`) when a `#tag` pill is
+   * clicked, e.g. to switch to the tags panel filtered to it. */
+  onTagClick?: (tag: string) => void;
 };
 
 const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "ico"];
@@ -98,6 +105,8 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       focusToken,
       vaultFiles,
       onNavigateFile,
+      getAllTags,
+      onTagClick,
     } = props;
     const { doc, onChange, save } = useDocument({ path, onDirtyChange });
     const { settings } = useEditorSettings();
@@ -134,6 +143,10 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     vaultFilesRef.current = vaultFiles;
     const onNavigateFileRef = useRef(onNavigateFile);
     onNavigateFileRef.current = onNavigateFile;
+    const getAllTagsRef = useRef(getAllTags);
+    getAllTagsRef.current = getAllTags;
+    const onTagClickRef = useRef(onTagClick);
+    onTagClickRef.current = onTagClick;
 
     const performSave = useCallback(async () => {
       await saveRef.current();
@@ -195,6 +208,9 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           onNavigate: (target, focusLine) =>
             onNavigateFileRef.current?.(target, focusLine),
         }),
+        tagsExtension({
+          onTagClick: (tag) => onTagClickRef.current?.(tag),
+        }),
         // Single shared autocomplete instance -- every completion feature adds
         // a provider here rather than its own autocompletion() (which conflict
         // under codemirror-helix). See lib/completion.ts.
@@ -202,6 +218,8 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           wikilinkCompletionProvider(() => vaultFilesRef.current ?? []),
           // `[[Note#heading]]` / `[[#heading]]` heading-reference completion.
           headingCompletionProvider(() => vaultFilesRef.current ?? []),
+          // `#tag` completion from the vault-wide tag index.
+          tagCompletionProvider(() => getAllTagsRef.current?.() ?? []),
           // Plain-text word completion from words already in the document.
           wordCompletionProvider(),
         ]),

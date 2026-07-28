@@ -11,6 +11,7 @@ import { SearchPanel } from "@/modules/search";
 import { SettingsView } from "@/modules/settings";
 import { useTheme } from "@/modules/settings/lib/useTheme";
 import { TabBar, useTabs } from "@/modules/tabs";
+import { TagsView, useTagIndex } from "@/modules/tags";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -18,6 +19,7 @@ import {
   CalendarClock,
   Files,
   FolderOpen,
+  Hash,
   Search,
   Settings,
 } from "lucide-react";
@@ -45,7 +47,7 @@ const MIN_DOCK_WIDTH = 240;
 const MAX_DOCK_WIDTH = 800;
 const DEFAULT_DOCK_WIDTH = 380;
 
-type MainView = "editor" | "agenda" | "search" | "settings";
+type MainView = "editor" | "agenda" | "search" | "tags" | "settings";
 
 type MermaidDock = { blockKey: string; label: string; initialText?: string };
 
@@ -63,7 +65,22 @@ function App() {
   } = useTabs();
   const [restoring, setRestoring] = useState(true);
   const vaultFiles = useVaultFiles(rootPath);
+  const { state: tagIndexState } = useTagIndex(rootPath);
+  const allTags = useMemo(
+    () =>
+      tagIndexState.status === "loaded"
+        ? tagIndexState.entries.map((e) => e.tag)
+        : [],
+    [tagIndexState],
+  );
   const [mainView, setMainView] = useState<MainView>("editor");
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedTagToken, setSelectedTagToken] = useState(0);
+  const openTagFilter = useCallback((tag: string) => {
+    setSelectedTag(tag);
+    setSelectedTagToken((t) => t + 1);
+    setMainView("tags");
+  }, []);
   const [mermaidDock, setMermaidDock] = useState<MermaidDock | null>(null);
   const [quickSwitcherOpen, setQuickSwitcherOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -247,6 +264,18 @@ function App() {
         <button
           type="button"
           className={
+            mainView === "tags"
+              ? "app-activitybar-btn app-activitybar-btn-active"
+              : "app-activitybar-btn"
+          }
+          title="Tags"
+          onClick={() => setMainView("tags")}
+        >
+          <Hash size={17} strokeWidth={1.75} />
+        </button>
+        <button
+          type="button"
+          className={
             mainView === "settings"
               ? "app-activitybar-btn app-activitybar-btn-active"
               : "app-activitybar-btn"
@@ -285,6 +314,13 @@ function App() {
               <AgendaView rootPath={rootPath} onOpenItem={openFile} />
             ) : mainView === "search" ? (
               <SearchPanel rootPath={rootPath} onOpenMatch={openFile} />
+            ) : mainView === "tags" ? (
+              <TagsView
+                rootPath={rootPath}
+                onOpenFile={(path) => openFile(path)}
+                selectedTag={selectedTag}
+                selectedTagToken={selectedTagToken}
+              />
             ) : mainView === "settings" ? (
               <SettingsView rootPath={rootPath} />
             ) : (
@@ -321,6 +357,8 @@ function App() {
                       onOpenMermaid={openMermaid}
                       vaultFiles={vaultFiles}
                       onNavigateFile={openFile}
+                      getAllTags={() => allTags}
+                      onTagClick={openTagFilter}
                     />
                   )
                 ) : (
