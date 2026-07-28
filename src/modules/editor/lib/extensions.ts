@@ -327,7 +327,8 @@ const chromeTheme = EditorView.theme({
   ".cm-wikilink": {
     color: "var(--syntax-function)",
     textDecoration: "none",
-    borderBottom: "1px solid color-mix(in oklch, var(--syntax-function) 45%, transparent)",
+    borderBottom:
+      "1px solid color-mix(in oklch, var(--syntax-function) 45%, transparent)",
     cursor: "pointer",
   },
   ".cm-wikilink:hover": {
@@ -337,6 +338,18 @@ const chromeTheme = EditorView.theme({
   ".cm-wikilink-unresolved": {
     color: "var(--muted-foreground)",
     borderBottomStyle: "dashed",
+  },
+
+  // ── Frontmatter (YAML metadata block) ───────────────────────────────────
+  ".cm-frontmatter-line": {
+    backgroundColor: "color-mix(in oklch, var(--foreground) 4%, transparent)",
+  },
+  ".cm-frontmatter-fence": {
+    color: "var(--muted-foreground)",
+  },
+  ".cm-frontmatter-key": {
+    color: "var(--syntax-keyword)",
+    opacity: "0.85",
   },
 
   // ── Fenced code blocks ──────────────────────────────────────────────────

@@ -1,3 +1,4 @@
+import { frontmatterExtension } from "@/modules/frontmatter";
 import { useEditorSettings } from "@/modules/settings/lib/editorSettings";
 import { StatusBar } from "@/modules/statusbar";
 import { redo, undo } from "@codemirror/commands";
@@ -199,6 +200,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           wikilinkCompletionProvider(() => vaultFilesRef.current ?? []),
         ]),
         docStatsReporterExtension((stats) => setDocStatsRef.current(stats)),
+        frontmatterExtension(),
         ...buildSharedExtensions(),
         languageCompartment.of([]),
         keymap.of([
