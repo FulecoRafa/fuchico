@@ -1,5 +1,5 @@
 import { emit, listen } from "@tauri-apps/api/event";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { openMermaidWindow } from "./lib/mermaidWindow";
 import type { MermaidBlockState } from "./lib/types";
@@ -78,6 +78,14 @@ export function MermaidPane({ blockKey, label, initialText, onClose }: Props) {
           }}
         >
           <ExternalLink size={14} strokeWidth={1.75} />
+        </button>
+        <button
+          type="button"
+          className="mermaid-pane-btn"
+          title="Close preview"
+          onClick={onClose}
+        >
+          <X size={14} strokeWidth={1.75} />
         </button>
       </div>
       <MermaidDiagramView state={state} />
