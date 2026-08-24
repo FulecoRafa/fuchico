@@ -2058,3 +2058,150 @@ input {
 .folding-preview-bar {
   width: auto;
 }
+
+/* ---------------------------------------------------------------------------
+ * Context menu (explorer, tabs) — issue #9
+ * ------------------------------------------------------------------------ */
+
+.context-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 160px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px oklch(0 0 0 / 0.18);
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  text-align: left;
+  cursor: default;
+}
+
+.context-menu-item:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.context-menu-item:disabled {
+  color: var(--muted-foreground);
+  opacity: 0.6;
+}
+
+.context-menu-item-danger:hover:not(:disabled) {
+  background: var(--destructive);
+  color: oklch(0.99 0 0);
+}
+
+.context-menu-icon-spacer {
+  width: 13px;
+  flex-shrink: 0;
+}
+
+.context-menu-separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border);
+}
+
+/* Explorer drag-and-drop move target — issue #16 */
+.tree-row-drop-target {
+  outline: 1.5px solid var(--ring);
+  outline-offset: -1.5px;
+  background: var(--accent);
+}
+
+.settings-input-number {
+  width: 90px;
+}
+
+/* ---------------------------------------------------------------------------
+ * CodeMirror search panel (Mod-F find & replace) — issue #25. The stock
+ * panel is functional but unstyled; theme it with the app tokens.
+ * ------------------------------------------------------------------------ */
+
+.cm-editor .cm-panels {
+  background: var(--secondary);
+  color: var(--foreground);
+  border-color: var(--border);
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+
+.cm-editor .cm-panels-top {
+  border-bottom: 1px solid var(--border);
+}
+
+.cm-editor .cm-panel.cm-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+}
+
+.cm-editor .cm-panel.cm-search input[type="checkbox"] {
+  accent-color: var(--primary);
+  margin: 0 2px 0 6px;
+}
+
+.cm-editor .cm-panel.cm-search label {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+.cm-editor .cm-textfield {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 12px;
+  padding: 3px 6px;
+  outline: none;
+}
+
+.cm-editor .cm-textfield:focus {
+  border-color: var(--ring);
+}
+
+.cm-editor .cm-button {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--background);
+  background-image: none;
+  color: var(--foreground);
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: default;
+}
+
+.cm-editor .cm-button:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.cm-editor .cm-panel.cm-search [name="close"] {
+  color: var(--muted-foreground);
+  font-size: 14px;
+  padding: 0 4px;
+}
+
+.cm-editor .cm-panel.cm-search [name="close"]:hover {
+  color: var(--foreground);
+}

@@ -60,8 +60,14 @@ export type EntryRowProps = {
   renameInProgress: boolean;
   isSelected: boolean;
   isRenaming: boolean;
+  isDropTarget: boolean;
   onOpenFile: (path: string) => void;
   onSelectPath: (path: string) => void;
+  onContextMenu: (path: string, e: React.MouseEvent) => void;
+  onDragStartPath: (path: string) => void;
+  onDragOverPath: (path: string, isDir: boolean, e: React.DragEvent) => void;
+  onDropPath: (path: string, isDir: boolean, e: React.DragEvent) => void;
+  onDragEnd: () => void;
 };
 
 function EntryRowImpl(props: EntryRowProps) {
@@ -75,8 +81,14 @@ function EntryRowImpl(props: EntryRowProps) {
     renameInProgress,
     isSelected,
     isRenaming,
+    isDropTarget,
     onOpenFile,
     onSelectPath,
+    onContextMenu,
+    onDragStartPath,
+    onDragOverPath,
+    onDropPath,
+    onDragEnd,
   } = props;
 
   const paddingLeft = 6 + depth * 12;
@@ -116,7 +128,23 @@ function EntryRowImpl(props: EntryRowProps) {
       data-fs-path={path}
       onClick={handleClick}
       onDoubleClick={() => actions.beginRename(path)}
-      className={`tree-row tree-row-button${isSelected ? " tree-row-selected" : ""}`}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onSelectPath(path);
+        onContextMenu(path, e);
+      }}
+      draggable={!renameInProgress}
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        // Payload travels via component state; set a text fallback anyway so
+        // the drag isn't empty for the OS.
+        e.dataTransfer.setData("text/plain", path);
+        onDragStartPath(path);
+      }}
+      onDragOver={(e) => onDragOverPath(path, isDir, e)}
+      onDrop={(e) => onDropPath(path, isDir, e)}
+      onDragEnd={onDragEnd}
+      className={`tree-row tree-row-button${isSelected ? " tree-row-selected" : ""}${isDropTarget ? " tree-row-drop-target" : ""}`}
       style={{ paddingLeft }}
       title={path}
     >

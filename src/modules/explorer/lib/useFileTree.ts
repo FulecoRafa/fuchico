@@ -203,6 +203,31 @@ export function useFileTree(rootPath: string | null, options?: Options) {
     [renaming, fetchChildren, options],
   );
 
+  /** Move a file/dir into another directory, keeping its name. The backend
+   * refuses to overwrite an existing target, so collisions surface as errors
+   * rather than data loss. Returns whether the move happened. */
+  const movePath = useCallback(
+    async (from: string, toDir: string): Promise<boolean> => {
+      const name = from.slice(from.lastIndexOf("/") + 1);
+      const to = joinPath(toDir, name);
+      const fromParent = dirname(from);
+      if (toDir === fromParent) return false;
+      // Moving a directory into itself or a descendant would orphan the tree.
+      if (`${toDir}/`.startsWith(`${from}/`)) return false;
+      try {
+        await invoke("fs_rename", { from, to });
+        options?.onPathRenamed?.(from, to);
+        await fetchChildren(fromParent);
+        await fetchChildren(toDir);
+        return true;
+      } catch (e) {
+        console.error("fs_rename (move) failed:", e);
+        return false;
+      }
+    },
+    [fetchChildren, options],
+  );
+
   const deletePath = useCallback(
     async (path: string) => {
       try {
@@ -230,6 +255,7 @@ export function useFileTree(rootPath: string | null, options?: Options) {
     beginRename,
     cancelRename,
     commitRename,
+    movePath,
     deletePath,
     joinPath,
   };
