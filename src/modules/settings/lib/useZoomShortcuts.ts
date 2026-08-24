@@ -16,13 +16,14 @@ export function useZoomShortcuts() {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
-      // Shift turns "=" into "+" and "-" into "_" on most layouts.
+      // Match on e.code: with Shift held, e.key becomes "+", "_", ")" etc.
+      // depending on layout, but the physical key code stays stable.
       const dir =
-        e.key === "=" || e.key === "+"
+        e.code === "Equal" || e.code === "NumpadAdd"
           ? 1
-          : e.key === "-" || e.key === "_"
+          : e.code === "Minus" || e.code === "NumpadSubtract"
             ? -1
-            : e.key === "0"
+            : e.code === "Digit0" || e.code === "Numpad0"
               ? 0
               : null;
       if (dir === null) return;
