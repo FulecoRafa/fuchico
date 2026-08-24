@@ -1,6 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
-import { useEditorSettings } from "./lib/editorSettings";
+import {
+  clampEditorFontSize,
+  clampUiScale,
+  EDITOR_FONT_SIZE_MAX,
+  EDITOR_FONT_SIZE_MIN,
+  UI_SCALE_MAX,
+  UI_SCALE_MIN,
+  useEditorSettings,
+} from "./lib/editorSettings";
 
 type FontsState =
   | { status: "loading" }
@@ -83,6 +91,45 @@ export function FontSection() {
               ))}
             </select>
           )}
+        </div>
+
+        <div className="settings-field">
+          <span className="settings-label">Editor font size</span>
+          <input
+            type="number"
+            className="settings-input settings-input-number"
+            min={EDITOR_FONT_SIZE_MIN}
+            max={EDITOR_FONT_SIZE_MAX}
+            value={settings.editorFontSize}
+            onChange={(e) =>
+              setSettings({
+                editorFontSize: clampEditorFontSize(e.target.valueAsNumber),
+              })
+            }
+          />
+          <span className="settings-hint">
+            Also Cmd/Ctrl +, − and 0 to reset.
+          </span>
+        </div>
+
+        <div className="settings-field">
+          <span className="settings-label">UI zoom</span>
+          <input
+            type="number"
+            className="settings-input settings-input-number"
+            min={Math.round(UI_SCALE_MIN * 100)}
+            max={Math.round(UI_SCALE_MAX * 100)}
+            step={10}
+            value={Math.round(settings.uiScale * 100)}
+            onChange={(e) =>
+              setSettings({
+                uiScale: clampUiScale(e.target.valueAsNumber / 100),
+              })
+            }
+          />
+          <span className="settings-hint">
+            Percent. Also Cmd/Ctrl Shift +, − and 0 to reset.
+          </span>
         </div>
 
         <div className="settings-field">

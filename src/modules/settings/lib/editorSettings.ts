@@ -31,7 +31,30 @@ export type EditorSettings = {
   relativeLineNumbers: boolean;
   /** Number of spaces per indent level / tab stop. */
   tabSize: number;
+  /** Editor content font size in px (Mod +/- adjusts, Mod-0 resets). */
+  editorFontSize: number;
+  /** Whole-app UI zoom factor (Mod-Shift +/- adjusts, Mod-Shift-0 resets).
+   * Independent from the editor font size. */
+  uiScale: number;
 };
+
+export const EDITOR_FONT_SIZE_DEFAULT = 13;
+export const EDITOR_FONT_SIZE_MIN = 8;
+export const EDITOR_FONT_SIZE_MAX = 32;
+export const UI_SCALE_DEFAULT = 1;
+export const UI_SCALE_MIN = 0.7;
+export const UI_SCALE_MAX = 1.6;
+
+export function clampEditorFontSize(size: number): number {
+  if (!Number.isFinite(size)) return EDITOR_FONT_SIZE_DEFAULT;
+  return Math.min(EDITOR_FONT_SIZE_MAX, Math.max(EDITOR_FONT_SIZE_MIN, size));
+}
+
+export function clampUiScale(scale: number): number {
+  if (!Number.isFinite(scale)) return UI_SCALE_DEFAULT;
+  const clamped = Math.min(UI_SCALE_MAX, Math.max(UI_SCALE_MIN, scale));
+  return Math.round(clamped * 100) / 100;
+}
 
 const STORAGE_KEY = "helix.editorSettings";
 
@@ -54,6 +77,8 @@ export const DEFAULT_SETTINGS: EditorSettings = {
   editorFont: "",
   relativeLineNumbers: false,
   tabSize: 2,
+  editorFontSize: EDITOR_FONT_SIZE_DEFAULT,
+  uiScale: UI_SCALE_DEFAULT,
 };
 
 function load(): EditorSettings {

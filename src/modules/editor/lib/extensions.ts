@@ -123,7 +123,8 @@ const chromeTheme = EditorView.theme({
   },
   ".cm-scroller": {
     fontFamily: "var(--font-mono)",
-    fontSize: "13px",
+    // Driven by settings (issue #5); useTheme keeps the CSS var in sync.
+    fontSize: "var(--editor-font-size, 13px)",
     lineHeight: "1.55",
   },
   ".cm-content": {
