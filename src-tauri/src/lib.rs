@@ -69,6 +69,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             file::fs_read_file,
             file::fs_write_file,
+            file::fs_write_binary,
             file::fs_stat,
             file::fs_canonicalize,
             tree::fs_read_dir,

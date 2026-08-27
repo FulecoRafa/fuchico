@@ -1348,6 +1348,7 @@ checksum = "42703706b716c37f96a77aea830392ad231f44c9e9a67872fa5548707e11b11c"
 name = "fuchico"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "chrono",
  "font-kit",
  "icalendar",

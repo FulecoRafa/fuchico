@@ -39,12 +39,13 @@ import {
   helixHandlersExtension,
   helixModeReporterExtension,
 } from "./lib/helix";
+import { imageAttachmentsExtension } from "./lib/imageAttachments";
 import { resolveLanguage } from "./lib/languageResolver";
 import {
   type MermaidOpenPayload,
   mermaidPreviewExtension,
 } from "./lib/mermaidPreviewExtension";
-import { getScrollPosition, setScrollPosition } from "./lib/scrollPositions";
+import { scrollPersistenceExtension } from "./lib/scrollPositions";
 import { shortcutsExtension } from "./lib/shortcuts";
 import { tagCompletionProvider, tagsExtension } from "./lib/tags";
 import { useDocument } from "./lib/useDocument";
@@ -83,6 +84,9 @@ type Props = {
   /** Called with the tag text (no leading `#`) when a `#tag` pill is
    * clicked, e.g. to switch to the tags panel filtered to it. */
   onTagClick?: (tag: string) => void;
+  /** Vault root; pasted/dropped images are saved under `<root>/attachments`.
+   * Read via a ref. */
+  rootPath?: string | null;
 };
 
 const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "ico"];
@@ -107,6 +111,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       onNavigateFile,
       getAllTags,
       onTagClick,
+      rootPath,
     } = props;
     const { doc, onChange, save } = useDocument({ path, onDirtyChange });
     const { settings } = useEditorSettings();
@@ -147,6 +152,8 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     getAllTagsRef.current = getAllTags;
     const onTagClickRef = useRef(onTagClick);
     onTagClickRef.current = onTagClick;
+    const rootPathRef = useRef(rootPath);
+    rootPathRef.current = rootPath;
 
     const performSave = useCallback(async () => {
       await saveRef.current();
@@ -215,6 +222,11 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         tagsExtension({
           onTagClick: (tag) => onTagClickRef.current?.(tag),
         }),
+        imageAttachmentsExtension({
+          currentPath: path,
+          getAttachmentsDir: () =>
+            rootPathRef.current ? `${rootPathRef.current}/attachments` : null,
+        }),
         // Single shared autocomplete instance -- every completion feature adds
         // a provider here rather than its own autocompletion() (which conflict
         // under codemirror-helix). See lib/completion.ts.
@@ -228,6 +240,8 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           wordCompletionProvider(),
         ]),
         docStatsReporterExtension((stats) => setDocStatsRef.current(stats)),
+        // Per-file scroll offset, across tab switches and app restarts.
+        scrollPersistenceExtension(path),
         frontmatterExtension(),
         ...buildSharedExtensions(),
         languageCompartment.of([]),
@@ -341,29 +355,6 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       });
       view.focus();
     }, [focusLine, focusToken, doc.status]);
-
-    // A new CodeMirror instance is mounted per active tab (see the `key`
-    // on <EditorPane> in App.tsx), so the DOM scroll offset doesn't survive
-    // switching away and back -- restore it from the cache, then keep the
-    // cache updated as the user scrolls.
-    useEffect(() => {
-      if (doc.status !== "ready") return;
-      const view = cmRef.current?.view;
-      if (!view) return;
-      const saved = getScrollPosition(path);
-      if (saved !== undefined) {
-        requestAnimationFrame(() => {
-          view.scrollDOM.scrollTop = saved;
-        });
-      }
-      const scrollDOM = view.scrollDOM;
-      const onScroll = () => setScrollPosition(path, scrollDOM.scrollTop);
-      scrollDOM.addEventListener("scroll", onScroll, { passive: true });
-      return () => {
-        setScrollPosition(path, scrollDOM.scrollTop);
-        scrollDOM.removeEventListener("scroll", onScroll);
-      };
-    }, [path, doc.status]);
 
     useImperativeHandle(
       ref,

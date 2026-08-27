@@ -224,3 +224,25 @@ mod tests {
         assert_eq!(std::fs::read(&outside).unwrap(), b"untouched");
     }
 }
+
+/// Writes raw bytes (base64-encoded over IPC) — used for pasted/dropped
+/// image attachments. Creates the parent directory as needed and refuses to
+/// overwrite an existing file so attachments are never clobbered.
+#[tauri::command]
+pub fn fs_write_binary(path: String, data_base64: String) -> Result<(), String> {
+    use base64::Engine;
+    let target = PathBuf::from(&path);
+    if target.exists() {
+        return Err(format!("already exists: {}", target.display()));
+    }
+    if let Some(parent) = target.parent() {
+        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(data_base64.as_bytes())
+        .map_err(|e| format!("invalid base64: {e}"))?;
+    write_atomic(&target, &bytes).map_err(|e| {
+        log::warn!("fs_write_binary({}) failed: {e}", target.display());
+        e.to_string()
+    })
+}
