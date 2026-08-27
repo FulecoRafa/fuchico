@@ -82,6 +82,7 @@ pub fn run() {
             tasks::tasks_toggle,
             tags::tags_scan,
             search::search_files,
+            search::search_replace_files,
             caldav::caldav_test_connection,
             caldav::caldav_discover_calendars,
             caldav::caldav_discover_calendars_for_account,

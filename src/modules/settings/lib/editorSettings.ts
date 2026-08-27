@@ -41,6 +41,9 @@ export type EditorSettings = {
   /** Vault-relative folder whose Markdown files are offered as templates. A
    * `daily.md` there seeds new daily notes. */
   templatesFolder: string;
+  /** Application name used by "Open with external tool" (issue #20), e.g.
+   * "Visual Studio Code". Empty = the OS default handler. */
+  externalTool: string;
 };
 
 export const EDITOR_FONT_SIZE_DEFAULT = 13;
@@ -86,6 +89,7 @@ export const DEFAULT_SETTINGS: EditorSettings = {
   uiScale: UI_SCALE_DEFAULT,
   dailyNotesFolder: "daily",
   templatesFolder: "templates",
+  externalTool: "",
 };
 
 function load(): EditorSettings {

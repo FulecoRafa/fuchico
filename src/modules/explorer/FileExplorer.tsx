@@ -1,6 +1,15 @@
 import { ContextMenu, type ContextMenuItem } from "@/lib/ContextMenu";
+import {
+  copyPathToClipboard,
+  openWithExternalTool,
+  revealInFileManager,
+} from "@/lib/fileActions";
+import { useEditorSettings } from "@/modules/settings/lib/editorSettings";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
+  Copy,
+  ExternalLink,
+  Eye,
   FilePlus,
   FolderOpen,
   FolderPlus,
@@ -155,6 +164,7 @@ export function FileExplorer({
   const tree = useFileTree(rootPath, treeOptions);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [menu, setMenu] = useState<MenuState>(null);
+  const externalTool = useEditorSettings().settings.externalTool;
   const [dragPath, setDragPath] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -317,6 +327,24 @@ export function FileExplorer({
           label: "Rename",
           icon: Pencil,
           onSelect: () => tree.beginRename(menu.path),
+        },
+        { kind: "separator" },
+        {
+          label: "Reveal in file manager",
+          icon: Eye,
+          onSelect: () => void revealInFileManager(menu.path),
+        },
+        {
+          label: externalTool.trim()
+            ? `Open with ${externalTool.trim()}`
+            : "Open with default app",
+          icon: ExternalLink,
+          onSelect: () => void openWithExternalTool(menu.path, externalTool),
+        },
+        {
+          label: "Copy path",
+          icon: Copy,
+          onSelect: () => void copyPathToClipboard(menu.path),
         },
         { kind: "separator" },
         {

@@ -1,7 +1,9 @@
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
+use tauri::Emitter;
 
+use super::fs::file::write_atomic;
 use super::fs::to_canon;
 
 #[derive(Serialize)]
@@ -84,9 +86,163 @@ pub fn search_files(root: String, query: String) -> Result<Vec<SearchMatch>, Str
     Ok(matches)
 }
 
+
+#[derive(Serialize, Default, Debug, PartialEq)]
+pub struct ReplaceResult {
+    pub files_changed: usize,
+    pub replacements: usize,
+}
+
+/// Case-insensitive replace of every `query` occurrence (with the same file
+/// walk and matching rules as `search_files`). Replaces the substring as
+/// written on disk with `replacement` verbatim. Only files whose canonical
+/// path is in `files` are touched when the list is given. Returns the
+/// number of files and occurrences changed.
+fn replace_in_content(content: &str, needle_lower: &str, replacement: &str) -> Option<(String, usize)> {
+    let lower = content.to_lowercase();
+    // to_lowercase can change byte lengths for some scripts; fall back to a
+    // char-wise comparison when the lengths diverge so we never slice
+    // inside a char boundary.
+    if lower.len() != content.len() {
+        return replace_by_chars(content, needle_lower, replacement);
+    }
+    let mut out = String::with_capacity(content.len());
+    let mut count = 0;
+    let mut pos = 0;
+    while let Some(rel) = lower[pos..].find(needle_lower) {
+        let at = pos + rel;
+        out.push_str(&content[pos..at]);
+        out.push_str(replacement);
+        pos = at + needle_lower.len();
+        count += 1;
+    }
+    if count == 0 {
+        return None;
+    }
+    out.push_str(&content[pos..]);
+    Some((out, count))
+}
+
+fn replace_by_chars(content: &str, needle_lower: &str, replacement: &str) -> Option<(String, usize)> {
+    let chars: Vec<char> = content.chars().collect();
+    let needle: Vec<char> = needle_lower.chars().collect();
+    let mut out = String::with_capacity(content.len());
+    let mut count = 0;
+    let mut i = 0;
+    while i < chars.len() {
+        let hit = i + needle.len() <= chars.len()
+            && chars[i..i + needle.len()]
+                .iter()
+                .zip(&needle)
+                .all(|(a, b)| a.to_lowercase().eq(b.to_lowercase()));
+        if hit {
+            out.push_str(replacement);
+            i += needle.len();
+            count += 1;
+        } else {
+            out.push(chars[i]);
+            i += 1;
+        }
+    }
+    (count > 0).then_some((out, count))
+}
+
+fn do_replace(
+    root: &str,
+    query: &str,
+    replacement: &str,
+    files: Option<&[String]>,
+    mut on_written: impl FnMut(&str),
+) -> Result<ReplaceResult, String> {
+    if query.trim().is_empty() {
+        return Ok(ReplaceResult::default());
+    }
+    let mut paths = Vec::new();
+    walk_files(Path::new(root), &mut paths);
+    paths.sort();
+    let needle = query.to_lowercase();
+    let mut result = ReplaceResult::default();
+    for file in paths {
+        let file_str = to_canon(&file);
+        if let Some(allow) = files {
+            if !allow.iter().any(|f| *f == file_str) {
+                continue;
+            }
+        }
+        let Ok(content) = std::fs::read_to_string(&file) else {
+            continue;
+        };
+        let Some((next, n)) = replace_in_content(&content, &needle, replacement) else {
+            continue;
+        };
+        let perms = std::fs::metadata(&file).ok().map(|m| m.permissions());
+        write_atomic(&file, next.as_bytes()).map_err(|e| format!("{}: {e}", file.display()))?;
+        if let Some(perms) = perms {
+            let _ = std::fs::set_permissions(&file, perms);
+        }
+        result.files_changed += 1;
+        result.replacements += n;
+        on_written(&file_str);
+    }
+    Ok(result)
+}
+
+#[tauri::command]
+pub fn search_replace_files(
+    root: String,
+    query: String,
+    replacement: String,
+    files: Option<Vec<String>>,
+    app: tauri::AppHandle,
+) -> Result<ReplaceResult, String> {
+    do_replace(&root, &query, &replacement, files.as_deref(), |path| {
+        let _ = app.emit(
+            "fs:file-written",
+            serde_json::json!({ "path": path, "source": "replace" }),
+        );
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn replaces_case_insensitively_and_reports_counts() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("a.md"), "Hello hello\nHELLO\n").unwrap();
+        std::fs::write(dir.path().join("b.md"), "nothing\n").unwrap();
+        let root = dir.path().to_string_lossy().into_owned();
+        let mut written = Vec::new();
+        let r = do_replace(&root, "hello", "bye", None, |p| written.push(p.to_string())).unwrap();
+        assert_eq!(r, ReplaceResult { files_changed: 1, replacements: 3 });
+        assert_eq!(std::fs::read_to_string(dir.path().join("a.md")).unwrap(), "bye bye\nbye\n");
+        assert_eq!(written.len(), 1);
+        assert!(written[0].ends_with("a.md"));
+    }
+
+    #[test]
+    fn restricts_to_given_files() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("a.md"), "x").unwrap();
+        std::fs::write(dir.path().join("b.md"), "x").unwrap();
+        let root = dir.path().to_string_lossy().into_owned();
+        let only = vec![to_canon(dir.path().join("b.md"))];
+        let r = do_replace(&root, "x", "y", Some(&only), |_| {}).unwrap();
+        assert_eq!(r.files_changed, 1);
+        assert_eq!(std::fs::read_to_string(dir.path().join("a.md")).unwrap(), "x");
+        assert_eq!(std::fs::read_to_string(dir.path().join("b.md")).unwrap(), "y");
+    }
+
+    #[test]
+    fn handles_multibyte_case_folding() {
+        assert_eq!(
+            // "İ" lowercases to two code points, so the byte lengths diverge
+            // and the char-wise path runs; it must not panic or mis-slice.
+            replace_in_content("İstanbul istanbul", "istanbul", "X"),
+            Some(("İstanbul X".to_string(), 1))
+        );
+    }
 
     #[test]
     fn finds_matches_case_insensitively_across_files() {

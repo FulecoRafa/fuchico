@@ -4,6 +4,7 @@ import { StatusBar } from "@/modules/statusbar";
 import { redo, undo } from "@codemirror/commands";
 import { EditorView, keymap } from "@codemirror/view";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import {
   forwardRef,
@@ -113,7 +114,24 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       onTagClick,
       rootPath,
     } = props;
-    const { doc, onChange, save } = useDocument({ path, onDirtyChange });
+    const { doc, onChange, save, reload } = useDocument({
+      path,
+      onDirtyChange,
+    });
+    // Another surface (vault-wide replace, templates…) rewrote this file:
+    // pick the new content up unless there are unsaved edits.
+    useEffect(() => {
+      const unlisten = listen<{ path: string; source?: string }>(
+        "fs:file-written",
+        (e) => {
+          if (e.payload.path === path && e.payload.source !== "editor")
+            reload();
+        },
+      );
+      return () => {
+        void unlisten.then((stop) => stop());
+      };
+    }, [path, reload]);
     const { settings } = useEditorSettings();
     const cmRef = useRef<ReactCodeMirrorRef>(null);
     const [helixMode, setHelixMode] = useState<HelixMode | null>("normal");

@@ -34,6 +34,19 @@ export function VaultSection() {
             A <code>daily.md</code> here seeds new daily notes.
           </span>
         </div>
+        <div className="settings-field">
+          <span className="settings-label">External tool</span>
+          <input
+            type="text"
+            className="settings-input"
+            placeholder='e.g. "Visual Studio Code" (empty = OS default)'
+            value={settings.externalTool}
+            onChange={(e) => setSettings({ externalTool: e.target.value })}
+          />
+          <span className="settings-hint">
+            Used by "Open with…" in the file explorer's right-click menu.
+          </span>
+        </div>
       </div>
     </div>
   );
