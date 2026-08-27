@@ -50,6 +50,7 @@ import {
   type MermaidOpenPayload,
   mermaidPreviewExtension,
 } from "./lib/mermaidPreviewExtension";
+import { pathDropExtension } from "./lib/pathDrop";
 import { scrollPersistenceExtension } from "./lib/scrollPositions";
 import { buildShortcutCommands, shortcutsExtension } from "./lib/shortcuts";
 import { tagCompletionProvider, tagsExtension } from "./lib/tags";
@@ -247,6 +248,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         tagsExtension({
           onTagClick: (tag) => onTagClickRef.current?.(tag),
         }),
+        pathDropExtension({ currentPath: path }),
         imageAttachmentsExtension({
           currentPath: path,
           getAttachmentsDir: () =>

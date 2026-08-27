@@ -1,4 +1,5 @@
 import { ContextMenu, type ContextMenuItem } from "@/lib/ContextMenu";
+import { hasExternalFiles, PATH_DRAG_TYPE } from "@/lib/dragTypes";
 import {
   copyPathToClipboard,
   openWithExternalTool,
@@ -16,11 +17,19 @@ import {
   Pencil,
   PenTool,
   RefreshCw,
+  Scissors,
   Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { externalFiles, importFiles } from "./lib/importFiles";
 import { dirname, useFileTree } from "./lib/useFileTree";
-import { EntryRow, PendingRow, type RowActions, StatusRow } from "./TreeRow";
+import {
+  EntryRow,
+  PendingRow,
+  type RowActions,
+  type SelectModifiers,
+  StatusRow,
+} from "./TreeRow";
 
 type Props = {
   rootPath: string | null;
@@ -69,6 +78,9 @@ type Row =
 const ROW_HEIGHT = 24;
 const OVERSCAN = 8;
 const TYPE_AHEAD_RESET_MS = 700;
+/** Hovering a collapsed folder while dragging expands it after this long. */
+const DROP_EXPAND_MS = 600;
+const NOTICE_MS = 4000;
 
 function basename(path: string): string {
   const parts = path.split(/[\\/]/).filter(Boolean);
@@ -165,8 +177,19 @@ export function FileExplorer({
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [menu, setMenu] = useState<MenuState>(null);
   const externalTool = useEditorSettings().settings.externalTool;
-  const [dragPath, setDragPath] = useState<string | null>(null);
+  // Multi-select (issue #44): `selectedPath` is the focused row (keyboard
+  // anchor for arrows), `selectedPaths` the full set an action applies to.
+  const [selectedPaths, setSelectedPaths] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const anchorRef = useRef<string | null>(null);
+  const [dragPaths, setDragPaths] = useState<string[]>([]);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [cutPaths, setCutPaths] = useState<string[]>([]);
+  const [notice, setNotice] = useState<{
+    text: string;
+    tone: "muted" | "error";
+  } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   // Type-ahead: printable keys typed in quick succession build a prefix that
@@ -212,13 +235,123 @@ export function FileExplorer({
     if (selectedPath && !entryIndexByPath.has(selectedPath)) {
       setSelectedPath(null);
     }
+    setSelectedPaths((prev) => {
+      if ([...prev].every((p) => entryIndexByPath.has(p))) return prev;
+      return new Set([...prev].filter((p) => entryIndexByPath.has(p)));
+    });
+    setCutPaths((prev) =>
+      prev.every((p) => entryIndexByPath.has(p))
+        ? prev
+        : prev.filter((p) => entryIndexByPath.has(p)),
+    );
   }, [entryIndexByPath, selectedPath]);
 
   useEffect(() => {
     if (activeFilePath && entryIndexByPath.has(activeFilePath)) {
       setSelectedPath(activeFilePath);
+      setSelectedPaths((prev) =>
+        prev.size === 1 && prev.has(activeFilePath)
+          ? prev
+          : new Set([activeFilePath]),
+      );
+      anchorRef.current = activeFilePath;
     }
   }, [activeFilePath, entryIndexByPath]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(null), NOTICE_MS);
+    return () => clearTimeout(t);
+  }, [notice]);
+
+  const selectPath = useCallback(
+    (path: string, mods?: SelectModifiers) => {
+      setSelectedPath(path);
+      if (mods?.shift && anchorRef.current) {
+        const a = entryPaths.indexOf(anchorRef.current);
+        const b = entryPaths.indexOf(path);
+        if (a >= 0 && b >= 0) {
+          setSelectedPaths(
+            new Set(entryPaths.slice(Math.min(a, b), Math.max(a, b) + 1)),
+          );
+          return;
+        }
+      }
+      anchorRef.current = path;
+      if (mods?.toggle) {
+        setSelectedPaths((prev) => {
+          const next = new Set(prev);
+          if (next.has(path) && next.size > 1) next.delete(path);
+          else next.add(path);
+          return next;
+        });
+        return;
+      }
+      setSelectedPaths(new Set([path]));
+    },
+    [entryPaths],
+  );
+
+  /** Paths an action on `path` applies to: the whole selection when the row
+   * is part of it, otherwise just that row. */
+  const targetsFor = useCallback(
+    (path: string): string[] =>
+      selectedPaths.has(path) ? [...selectedPaths] : [path],
+    [selectedPaths],
+  );
+
+  const moveAll = useCallback(
+    async (paths: string[], toDir: string) => {
+      for (const p of paths) await tree.movePath(p, toDir);
+    },
+    [tree.movePath],
+  );
+
+  const deleteAll = useCallback(
+    (paths: string[]) => {
+      const label =
+        paths.length === 1
+          ? `"${basename(paths[0])}"`
+          : `${paths.length} items`;
+      if (!window.confirm(`Delete ${label}?`)) return;
+      void (async () => {
+        for (const p of paths) await tree.deletePath(p);
+      })();
+    },
+    [tree.deletePath],
+  );
+
+  const pasteCutInto = useCallback(
+    (toDir: string) => {
+      if (cutPaths.length === 0) return;
+      const movable = cutPaths.filter(
+        (p) => dirname(p) !== toDir && !`${toDir}/`.startsWith(`${p}/`),
+      );
+      setCutPaths([]);
+      void moveAll(movable, toDir);
+    },
+    [cutPaths, moveAll],
+  );
+
+  const runImport = useCallback(
+    async (files: File[], toDir: string) => {
+      const result = await importFiles(files, toDir);
+      if (toDir !== rootPath && !tree.expanded.has(toDir)) tree.toggle(toDir);
+      else tree.refresh(toDir);
+      if (result.errors.length > 0) {
+        setNotice({
+          text: `Import failed: ${result.errors.join("; ")}`,
+          tone: "error",
+        });
+      } else {
+        setNotice({
+          text: `Imported ${result.imported.length} file${result.imported.length === 1 ? "" : "s"} into ${basename(toDir)}`,
+          tone: "muted",
+        });
+      }
+    },
+    [rootPath, tree.expanded, tree.refresh, tree.toggle],
+  );
 
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -254,44 +387,89 @@ export function FileExplorer({
     [],
   );
 
+  // OS file drags can always land (they copy in); tree drags must not land in
+  // their own parent or inside themselves.
   const canDropInto = useCallback(
-    (toDir: string) => {
-      if (!dragPath) return false;
-      if (toDir === dirname(dragPath)) return false;
-      if (`${toDir}/`.startsWith(`${dragPath}/`)) return false;
-      return true;
+    (toDir: string, e: React.DragEvent) => {
+      if (hasExternalFiles(e.dataTransfer)) return true;
+      if (dragPaths.length === 0) return false;
+      return dragPaths.every(
+        (p) => toDir !== dirname(p) && !`${toDir}/`.startsWith(`${p}/`),
+      );
     },
-    [dragPath],
+    [dragPaths],
+  );
+
+  const handleDragOverDir = useCallback(
+    (toDir: string, e: React.DragEvent) => {
+      if (!canDropInto(toDir, e)) return;
+      e.preventDefault();
+      // Rows sit inside the scroll area (a root drop target): stop here so
+      // the container doesn't re-target the drop to the vault root.
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = hasExternalFiles(e.dataTransfer)
+        ? "copy"
+        : "move";
+      setDropTarget(toDir);
+    },
+    [canDropInto],
+  );
+
+  const handleDropDir = useCallback(
+    (toDir: string, e: React.DragEvent) => {
+      if (!canDropInto(toDir, e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const files = externalFiles(e.dataTransfer);
+      if (files.length > 0) void runImport(files, toDir);
+      else void moveAll(dragPaths, toDir);
+      setDragPaths([]);
+      setDropTarget(null);
+    },
+    [canDropInto, dragPaths, moveAll, runImport],
   );
 
   const handleDragOverPath = useCallback(
-    (path: string, isDir: boolean, e: React.DragEvent) => {
-      const toDir = dropDirFor(path, isDir);
-      if (!canDropInto(toDir)) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-      setDropTarget(toDir);
-    },
-    [dropDirFor, canDropInto],
+    (path: string, isDir: boolean, e: React.DragEvent) =>
+      handleDragOverDir(dropDirFor(path, isDir), e),
+    [dropDirFor, handleDragOverDir],
   );
 
   const handleDropPath = useCallback(
-    (path: string, isDir: boolean, e: React.DragEvent) => {
-      const toDir = dropDirFor(path, isDir);
-      if (!canDropInto(toDir)) return;
-      e.preventDefault();
-      e.stopPropagation();
-      if (dragPath) void tree.movePath(dragPath, toDir);
-      setDragPath(null);
-      setDropTarget(null);
+    (path: string, isDir: boolean, e: React.DragEvent) =>
+      handleDropDir(dropDirFor(path, isDir), e),
+    [dropDirFor, handleDropDir],
+  );
+
+  const handleDragStart = useCallback(
+    (path: string, e: React.DragEvent) => {
+      const paths = targetsFor(path);
+      setDragPaths(paths);
+      e.dataTransfer.setData(PATH_DRAG_TYPE, paths.join("\n"));
+      // Drag image: just the name (or the count), not the whole row.
+      const ghost = document.createElement("div");
+      ghost.className = "tree-drag-ghost";
+      ghost.textContent =
+        paths.length > 1 ? `${paths.length} items` : basename(path);
+      document.body.appendChild(ghost);
+      e.dataTransfer.setDragImage(ghost, 8, 12);
+      requestAnimationFrame(() => ghost.remove());
     },
-    [dropDirFor, canDropInto, dragPath, tree.movePath],
+    [targetsFor],
   );
 
   const handleDragEnd = useCallback(() => {
-    setDragPath(null);
+    setDragPaths([]);
     setDropTarget(null);
   }, []);
+
+  // Spring-loaded folders: hovering a collapsed folder mid-drag opens it.
+  useEffect(() => {
+    if (!dropTarget || dropTarget === rootPath || tree.expanded.has(dropTarget))
+      return;
+    const t = setTimeout(() => tree.toggle(dropTarget), DROP_EXPAND_MS);
+    return () => clearTimeout(t);
+  }, [dropTarget, rootPath, tree.expanded, tree.toggle]);
 
   if (!rootPath) {
     return <div className="explorer-empty">No folder open</div>;
@@ -328,6 +506,23 @@ export function FileExplorer({
           icon: Pencil,
           onSelect: () => tree.beginRename(menu.path),
         },
+        {
+          label:
+            targetsFor(menu.path).length > 1
+              ? `Cut ${targetsFor(menu.path).length} items`
+              : "Cut",
+          icon: Scissors,
+          onSelect: () => setCutPaths(targetsFor(menu.path)),
+        },
+        ...(cutPaths.length > 0
+          ? ([
+              {
+                label: `Paste ${cutPaths.length === 1 ? basename(cutPaths[0]) : `${cutPaths.length} items`} here`,
+                icon: Copy,
+                onSelect: () => pasteCutInto(dropDirFor(menu.path, menu.isDir)),
+              },
+            ] satisfies ContextMenuItem[])
+          : []),
         { kind: "separator" },
         {
           label: "Reveal in file manager",
@@ -342,20 +537,23 @@ export function FileExplorer({
           onSelect: () => void openWithExternalTool(menu.path, externalTool),
         },
         {
-          label: "Copy path",
+          label:
+            targetsFor(menu.path).length > 1
+              ? `Copy ${targetsFor(menu.path).length} paths`
+              : "Copy path",
           icon: Copy,
-          onSelect: () => void copyPathToClipboard(menu.path),
+          onSelect: () =>
+            void copyPathToClipboard(targetsFor(menu.path).join("\n")),
         },
         { kind: "separator" },
         {
-          label: "Delete",
+          label:
+            targetsFor(menu.path).length > 1
+              ? `Delete ${targetsFor(menu.path).length} items`
+              : "Delete",
           icon: Trash2,
           danger: true,
-          onSelect: () => {
-            if (window.confirm(`Delete "${basename(menu.path)}"?`)) {
-              void tree.deletePath(menu.path);
-            }
-          },
+          onSelect: () => deleteAll(targetsFor(menu.path)),
         },
       ]
     : [];
@@ -371,21 +569,54 @@ export function FileExplorer({
     if (entryPaths.length === 0) return;
 
     const currentIdx = selectedPath ? entryPaths.indexOf(selectedPath) : -1;
-    const move = (next: number) => {
+    const move = (next: number, extend = false) => {
       const clamped = Math.max(0, Math.min(entryPaths.length - 1, next));
       const path = entryPaths[clamped];
-      setSelectedPath(path);
+      selectPath(path, { shift: extend, toggle: false });
       requestAnimationFrame(() => scrollEntryIntoView(path));
     };
+
+    // Cmd/Ctrl-X cuts the selection, Cmd/Ctrl-V moves it into the focused
+    // folder (or the focused file's folder) — issue #44 item 7.
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey) {
+      if (e.key === "x" && currentIdx >= 0) {
+        e.preventDefault();
+        setCutPaths(targetsFor(entryPaths[currentIdx]));
+        return;
+      }
+      if (e.key === "v" && cutPaths.length > 0) {
+        e.preventDefault();
+        const target = currentIdx >= 0 ? entryPaths[currentIdx] : rootPath;
+        const idx = entryIndexByPath.get(target);
+        const row = idx !== undefined ? rows[idx] : undefined;
+        const isDir = row?.kind === "entry" ? row.isDir : true;
+        pasteCutInto(dropDirFor(target, isDir));
+        return;
+      }
+      if (e.key === "a") {
+        e.preventDefault();
+        setSelectedPaths(new Set(entryPaths));
+        if (currentIdx < 0) setSelectedPath(entryPaths[0]);
+        return;
+      }
+    }
+    if (e.key === "Escape" && cutPaths.length > 0) {
+      e.preventDefault();
+      setCutPaths([]);
+      return;
+    }
 
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
-        move(currentIdx < 0 ? 0 : currentIdx + 1);
+        move(currentIdx < 0 ? 0 : currentIdx + 1, e.shiftKey);
         break;
       case "ArrowUp":
         e.preventDefault();
-        move(currentIdx < 0 ? entryPaths.length - 1 : currentIdx - 1);
+        move(
+          currentIdx < 0 ? entryPaths.length - 1 : currentIdx - 1,
+          e.shiftKey,
+        );
         break;
       case "ArrowRight": {
         if (currentIdx < 0) return;
@@ -427,10 +658,7 @@ export function FileExplorer({
       case "Backspace": {
         if (currentIdx < 0) return;
         e.preventDefault();
-        const path = entryPaths[currentIdx];
-        if (window.confirm(`Delete "${basename(path)}"?`)) {
-          void tree.deletePath(path);
-        }
+        deleteAll(targetsFor(entryPaths[currentIdx]));
         break;
       }
       case "F2": {
@@ -481,13 +709,14 @@ export function FileExplorer({
             depth={row.depth}
             actions={rowActions}
             renameInProgress={renameInProgress}
-            isSelected={selectedPath === row.path}
+            isSelected={selectedPaths.has(row.path)}
             isRenaming={row.kind === "rename"}
             isDropTarget={dropTarget === row.path && row.isDir}
+            isCut={cutPaths.includes(row.path)}
             onOpenFile={onOpenFile}
-            onSelectPath={setSelectedPath}
+            onSelectPath={selectPath}
             onContextMenu={openContextMenu}
-            onDragStartPath={setDragPath}
+            onDragStartPath={handleDragStart}
             onDragOverPath={handleDragOverPath}
             onDropPath={handleDropPath}
             onDragEnd={handleDragEnd}
@@ -518,7 +747,15 @@ export function FileExplorer({
       tabIndex={0}
       onKeyDown={handleKeyDown}
     >
-      <div className="explorer-header">
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: the header doubles as the "move to vault root" drop target (issue #44 item 3) */}
+      <div
+        className={`explorer-header${dropTarget === rootPath ? " explorer-header-drop-target" : ""}`}
+        onDragOver={(e) => handleDragOverDir(rootPath, e)}
+        onDrop={(e) => handleDropDir(rootPath, e)}
+        onDragLeave={(e) => {
+          if (e.currentTarget === e.target) setDropTarget(null);
+        }}
+      >
         <span className="explorer-title" title={rootPath}>
           {basename(rootPath)}
         </span>
@@ -573,24 +810,20 @@ export function FileExplorer({
       <div
         ref={scrollRef}
         className="explorer-scroll"
-        onDragOver={(e) => {
-          // Fallback target: empty space below the tree moves into the root.
-          if (!canDropInto(rootPath)) return;
-          e.preventDefault();
-          e.dataTransfer.dropEffect = "move";
-          setDropTarget(rootPath);
-        }}
-        onDrop={(e) => {
-          if (!canDropInto(rootPath)) return;
-          e.preventDefault();
-          if (dragPath) void tree.movePath(dragPath, rootPath);
-          setDragPath(null);
-          setDropTarget(null);
-        }}
+        // Fallback target: empty space below the tree moves into the root.
+        onDragOver={(e) => handleDragOverDir(rootPath, e)}
+        onDrop={(e) => handleDropDir(rootPath, e)}
         onDragLeave={(e) => {
           if (e.currentTarget === e.target) setDropTarget(null);
         }}
       >
+        {notice ? (
+          <div
+            className={`explorer-notice${notice.tone === "error" ? " explorer-notice-error" : ""}`}
+          >
+            {notice.text}
+          </div>
+        ) : null}
         {pendingAtRoot ? (
           <PendingRow
             depth={0}

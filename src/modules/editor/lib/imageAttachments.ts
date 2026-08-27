@@ -21,7 +21,7 @@ const EXT_BY_MIME: Record<string, string> = {
   "image/bmp": "bmp",
 };
 
-function timestamp(): string {
+export function timestamp(): string {
   const d = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   return (
@@ -43,7 +43,7 @@ function attachmentName(file: File): string {
   return generic ? `pasted-${timestamp()}.${ext}` : `${base}.${ext}`;
 }
 
-function toBase64(buf: ArrayBuffer): string {
+export function toBase64(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
   let bin = "";
   const CHUNK = 0x8000;

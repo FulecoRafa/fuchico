@@ -2445,3 +2445,34 @@ input {
     width: 100%;
   }
 }
+
+/* Explorer multi-select / drag feedback (issue #44) */
+.tree-row-cut {
+  opacity: 0.55;
+}
+.tree-drag-ghost {
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.explorer-header-drop-target {
+  outline: 1.5px solid var(--ring);
+  outline-offset: -1.5px;
+  background: var(--accent);
+}
+.explorer-notice {
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  border-bottom: 1px solid var(--border);
+}
+.explorer-notice-error {
+  color: var(--destructive, #e5484d);
+}

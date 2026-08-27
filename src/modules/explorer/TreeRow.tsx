@@ -50,6 +50,10 @@ function InlineInput({
   );
 }
 
+/** Modifier keys held during a row click — Shift extends a range from the
+ * anchor, Cmd/Ctrl toggles the row in the selection (issue #44). */
+export type SelectModifiers = { shift: boolean; toggle: boolean };
+
 export type EntryRowProps = {
   path: string;
   name: string;
@@ -61,10 +65,12 @@ export type EntryRowProps = {
   isSelected: boolean;
   isRenaming: boolean;
   isDropTarget: boolean;
+  /** Marked for a pending Cmd-X / Cmd-V move. */
+  isCut: boolean;
   onOpenFile: (path: string) => void;
-  onSelectPath: (path: string) => void;
+  onSelectPath: (path: string, mods?: SelectModifiers) => void;
   onContextMenu: (path: string, e: React.MouseEvent) => void;
-  onDragStartPath: (path: string) => void;
+  onDragStartPath: (path: string, e: React.DragEvent) => void;
   onDragOverPath: (path: string, isDir: boolean, e: React.DragEvent) => void;
   onDropPath: (path: string, isDir: boolean, e: React.DragEvent) => void;
   onDragEnd: () => void;
@@ -82,6 +88,7 @@ function EntryRowImpl(props: EntryRowProps) {
     isSelected,
     isRenaming,
     isDropTarget,
+    isCut,
     onOpenFile,
     onSelectPath,
     onContextMenu,
@@ -115,9 +122,14 @@ function EntryRowImpl(props: EntryRowProps) {
     );
   }
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
     if (renameInProgress) return;
-    onSelectPath(path);
+    const mods: SelectModifiers = {
+      shift: e.shiftKey,
+      toggle: e.metaKey || e.ctrlKey,
+    };
+    onSelectPath(path, mods);
+    if (mods.shift || mods.toggle) return; // selection-only click
     if (isDir) actions.toggle(path);
     else onOpenFile(path);
   };
@@ -130,21 +142,22 @@ function EntryRowImpl(props: EntryRowProps) {
       onDoubleClick={() => actions.beginRename(path)}
       onContextMenu={(e) => {
         e.preventDefault();
-        onSelectPath(path);
+        // Keep a multi-selection intact when right-clicking inside it.
+        if (!isSelected) onSelectPath(path);
         onContextMenu(path, e);
       }}
       draggable={!renameInProgress}
       onDragStart={(e) => {
-        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.effectAllowed = "copyMove";
         // Payload travels via component state; set a text fallback anyway so
         // the drag isn't empty for the OS.
         e.dataTransfer.setData("text/plain", path);
-        onDragStartPath(path);
+        onDragStartPath(path, e);
       }}
       onDragOver={(e) => onDragOverPath(path, isDir, e)}
       onDrop={(e) => onDropPath(path, isDir, e)}
       onDragEnd={onDragEnd}
-      className={`tree-row tree-row-button${isSelected ? " tree-row-selected" : ""}${isDropTarget ? " tree-row-drop-target" : ""}`}
+      className={`tree-row tree-row-button${isSelected ? " tree-row-selected" : ""}${isDropTarget ? " tree-row-drop-target" : ""}${isCut ? " tree-row-cut" : ""}`}
       style={{ paddingLeft }}
       title={path}
     >
