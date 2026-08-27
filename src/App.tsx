@@ -219,8 +219,28 @@ function App() {
         hasRootPath: rootPath !== null,
         hasActiveTab: activePath !== null,
         hasOpenTabs: tabs.length > 0,
+        rootPath,
+        vaultFiles,
+        openFile: (path) => openFile(path),
+        openShortcuts: () => {
+          setMainView("settings");
+          requestAnimationFrame(() =>
+            document
+              .getElementById("settings-shortcuts")
+              ?.scrollIntoView({ block: "start" }),
+          );
+        },
       }),
-    [handleOpenFolder, activePath, closeTab, closeAll, rootPath, tabs.length],
+    [
+      handleOpenFolder,
+      activePath,
+      closeTab,
+      closeAll,
+      rootPath,
+      tabs.length,
+      vaultFiles,
+      openFile,
+    ],
   );
 
   if (restoring) {
@@ -368,6 +388,7 @@ function App() {
                       onNavigateFile={openFile}
                       getAllTags={() => allTags}
                       onTagClick={openTagFilter}
+                      rootPath={rootPath}
                     />
                   )
                 ) : (

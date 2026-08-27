@@ -2205,3 +2205,34 @@ input {
 .cm-editor .cm-panel.cm-search [name="close"]:hover {
   color: var(--foreground);
 }
+
+/* --- Searchable shortcuts list (issue #7) --- */
+.settings-shortcut-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--muted-foreground);
+}
+.settings-shortcut-search .settings-input {
+  flex: 1;
+  max-width: 320px;
+}
+.settings-shortcut-group {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  margin: 0.75rem 0 0.25rem;
+}
+.settings-shortcut-groupwrap {
+  display: contents;
+}
+.settings-shortcut-key-fixed {
+  cursor: default;
+  opacity: 0.85;
+}
+.settings-shortcut-key-fixed:hover {
+  background: inherit;
+}

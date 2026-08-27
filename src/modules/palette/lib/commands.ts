@@ -1,4 +1,10 @@
 import { editorSettingsStore } from "@/modules/settings/lib/editorSettings";
+import {
+  createFromTemplate,
+  listTemplates,
+  openDailyNote,
+  stem,
+} from "./templates";
 
 export type AppCommand = {
   id: string;
@@ -20,6 +26,12 @@ export type CommandContext = {
   hasRootPath: boolean;
   hasActiveTab: boolean;
   hasOpenTabs: boolean;
+  /** Vault root and its Markdown files, for daily notes / templates. */
+  rootPath: string | null;
+  vaultFiles: readonly string[];
+  openFile: (path: string) => void;
+  /** Jumps to the searchable keyboard-shortcuts list in Settings. */
+  openShortcuts: () => void;
 };
 
 function toggleThemeCommand(): AppCommand {
@@ -101,6 +113,44 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
       run: () => ctx.closeAllTabs(),
     });
   }
+
+  if (ctx.rootPath) {
+    const root = ctx.rootPath;
+    const { dailyNotesFolder, templatesFolder } = editorSettingsStore.get();
+    commands.push({
+      id: "open-daily-note",
+      title: "Open Today's Daily Note",
+      keywords: ["journal", "today", "diary", "new note"],
+      run: () => {
+        void openDailyNote({ root, dailyNotesFolder, templatesFolder }).then(
+          (path) => ctx.openFile(path),
+        );
+      },
+    });
+    for (const template of listTemplates(
+      root,
+      templatesFolder,
+      ctx.vaultFiles,
+    )) {
+      commands.push({
+        id: `new-from-template:${template}`,
+        title: `New Note from Template: ${stem(template)}`,
+        keywords: ["template", "create", "new note"],
+        run: () => {
+          void createFromTemplate(root, template).then((path) =>
+            ctx.openFile(path),
+          );
+        },
+      });
+    }
+  }
+
+  commands.push({
+    id: "keyboard-shortcuts",
+    title: "Keyboard Shortcuts",
+    keywords: ["keys", "hotkeys", "bindings", "help"],
+    run: () => ctx.openShortcuts(),
+  });
 
   commands.push(toggleThemeCommand());
 

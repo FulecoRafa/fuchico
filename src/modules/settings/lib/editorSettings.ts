@@ -36,6 +36,11 @@ export type EditorSettings = {
   /** Whole-app UI zoom factor (Mod-Shift +/- adjusts, Mod-Shift-0 resets).
    * Independent from the editor font size. */
   uiScale: number;
+  /** Vault-relative folder for daily notes (`YYYY-MM-DD.md`). */
+  dailyNotesFolder: string;
+  /** Vault-relative folder whose Markdown files are offered as templates. A
+   * `daily.md` there seeds new daily notes. */
+  templatesFolder: string;
 };
 
 export const EDITOR_FONT_SIZE_DEFAULT = 13;
@@ -79,6 +84,8 @@ export const DEFAULT_SETTINGS: EditorSettings = {
   tabSize: 2,
   editorFontSize: EDITOR_FONT_SIZE_DEFAULT,
   uiScale: UI_SCALE_DEFAULT,
+  dailyNotesFolder: "daily",
+  templatesFolder: "templates",
 };
 
 function load(): EditorSettings {
