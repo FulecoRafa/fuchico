@@ -10,6 +10,8 @@ type Props = {
   onClose: (path: string) => void;
   onCloseOthers: (path: string) => void;
   onCloseAll: () => void;
+  /** Detaches the tab into its own OS window (issue #29). */
+  onOpenInWindow?: (path: string) => void;
 };
 
 type MenuState = { x: number; y: number; path: string } | null;
@@ -26,6 +28,7 @@ export function TabBar({
   onClose,
   onCloseOthers,
   onCloseAll,
+  onOpenInWindow,
 }: Props) {
   const [menu, setMenu] = useState<MenuState>(null);
 
@@ -38,6 +41,15 @@ export function TabBar({
           onSelect: () => onCloseOthers(menu.path),
         },
         { label: "Close all", onSelect: onCloseAll },
+        ...(onOpenInWindow
+          ? ([
+              { kind: "separator" },
+              {
+                label: "Open in new window",
+                onSelect: () => onOpenInWindow(menu.path),
+              },
+            ] satisfies ContextMenuItem[])
+          : []),
       ]
     : [];
 

@@ -8,6 +8,7 @@ import {
 import { useEditorSettings } from "@/modules/settings/lib/editorSettings";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
+  AppWindow,
   Copy,
   ExternalLink,
   Eye,
@@ -38,6 +39,8 @@ type Props = {
   onOpenFolder: () => void;
   onPathRenamed?: (from: string, to: string) => void;
   onPathDeleted?: (path: string) => void;
+  /** Opens a file in its own OS window (issue #29). */
+  onOpenInWindow?: (path: string) => void;
 };
 
 type MenuState = { x: number; y: number; path: string; isDir: boolean } | null;
@@ -168,6 +171,7 @@ export function FileExplorer({
   onOpenFolder,
   onPathRenamed,
   onPathDeleted,
+  onOpenInWindow,
 }: Props) {
   const treeOptions = useMemo(
     () => ({ onPathRenamed, onPathDeleted }),
@@ -499,6 +503,15 @@ export function FileExplorer({
                   }),
               },
               { kind: "separator" },
+            ] satisfies ContextMenuItem[])
+          : []),
+        ...(!menu.isDir && onOpenInWindow
+          ? ([
+              {
+                label: "Open in new window",
+                icon: AppWindow,
+                onSelect: () => onOpenInWindow(menu.path),
+              },
             ] satisfies ContextMenuItem[])
           : []),
         {

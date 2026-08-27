@@ -1,11 +1,29 @@
 import { invoke } from "@tauri-apps/api/core";
+import { emit, listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export const FS_CHANGED_EVENT = "helix:fs-changed";
+/** Cross-window twin of `FS_CHANGED_EVENT`, carried by Tauri's event bus so
+ * a note created from a secondary window refreshes the main explorer. */
+const FS_CHANGED_TAURI_EVENT = "fs:changed";
 
-/** Tells mounted file trees that `dir`'s contents changed on disk. */
+function currentWindowLabel(): string {
+  try {
+    return getCurrentWindow().label;
+  } catch {
+    return "main";
+  }
+}
+
+/** Tells mounted file trees (in every window) that `dir`'s contents changed
+ * on disk. */
 export function notifyFsChanged(dir: string): void {
   window.dispatchEvent(new CustomEvent(FS_CHANGED_EVENT, { detail: dir }));
+  void emit(FS_CHANGED_TAURI_EVENT, {
+    dir,
+    from: currentWindowLabel(),
+  }).catch(() => {});
 }
 
 export type DirEntry = {
@@ -139,7 +157,18 @@ export function useFileTree(rootPath: string | null, options?: Options) {
       if (typeof dir === "string") void fetchChildren(dir);
     };
     window.addEventListener(FS_CHANGED_EVENT, onChanged);
-    return () => window.removeEventListener(FS_CHANGED_EVENT, onChanged);
+    const me = currentWindowLabel();
+    const unlisten = listen<{ dir: string; from: string }>(
+      FS_CHANGED_TAURI_EVENT,
+      (e) => {
+        // Our own emit already refreshed via the DOM event above.
+        if (e.payload.from !== me) void fetchChildren(e.payload.dir);
+      },
+    );
+    return () => {
+      window.removeEventListener(FS_CHANGED_EVENT, onChanged);
+      void unlisten.then((stop) => stop());
+    };
   }, [fetchChildren]);
 
   const beginCreate = useCallback(

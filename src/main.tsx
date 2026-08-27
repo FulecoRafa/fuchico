@@ -5,6 +5,8 @@ import "./styles/globals.css";
 
 const params = new URLSearchParams(window.location.search);
 const mermaidBlockKey = params.get("mermaidBlockKey");
+const editorWindowPath =
+  params.get("window") === "editor" ? params.get("path") : null;
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement,
@@ -21,6 +23,23 @@ if (mermaidBlockKey) {
         <MermaidWindowApp
           blockKey={mermaidBlockKey}
           title={params.get("title") ?? "Diagram"}
+        />
+      </Suspense>
+    </React.StrictMode>,
+  );
+} else if (editorWindowPath) {
+  // Secondary single-file editor window (issue #29).
+  const EditorWindowApp = lazy(() =>
+    import("@/modules/editor/EditorWindowApp").then((m) => ({
+      default: m.EditorWindowApp,
+    })),
+  );
+  root.render(
+    <React.StrictMode>
+      <Suspense fallback={null}>
+        <EditorWindowApp
+          initialPath={editorWindowPath}
+          rootPath={params.get("root")}
         />
       </Suspense>
     </React.StrictMode>,

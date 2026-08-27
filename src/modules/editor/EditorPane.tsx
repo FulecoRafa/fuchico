@@ -126,14 +126,17 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       path,
       onDirtyChange,
     });
-    // Another surface (vault-wide replace, templates…) rewrote this file:
-    // pick the new content up unless there are unsaved edits.
+    // Another surface (vault-wide replace, templates, a second window…)
+    // rewrote this file: pick the new content up unless there are unsaved
+    // edits, in which case show a conflict banner instead of clobbering
+    // either side silently (issue #29).
+    const [conflict, setConflict] = useState(false);
     useEffect(() => {
       const unlisten = listen<{ path: string; source?: string }>(
         "fs:file-written",
         (e) => {
-          if (e.payload.path === path && e.payload.source !== "editor")
-            reload();
+          if (e.payload.path !== path || e.payload.source === "editor") return;
+          if (!reload()) setConflict(true);
         },
       );
       return () => {
@@ -444,6 +447,25 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
 
     return (
       <div className="editor-pane">
+        {conflict && (
+          <div className="editor-conflict" role="alert">
+            <span>
+              This file was modified elsewhere while you have unsaved changes.
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                reload(true);
+                setConflict(false);
+              }}
+            >
+              Reload from disk
+            </button>
+            <button type="button" onClick={() => setConflict(false)}>
+              Keep my version
+            </button>
+          </div>
+        )}
         <div className="editor-canvas">
           <CodeMirror
             ref={cmRef}

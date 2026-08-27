@@ -41,6 +41,8 @@ export type CommandContext = {
   /** Jumps to the searchable keyboard-shortcuts list in Settings. */
   openSettings: (section: SettingsSectionId) => void;
   runEditorAction: (action: ShortcutAction) => void;
+  /** Detaches the active tab into its own OS window (issue #29). */
+  openActiveInNewWindow: () => void;
 };
 
 function toggleThemeCommand(): AppCommand {
@@ -174,6 +176,15 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
     keywords: ["keys", "hotkeys", "bindings", "help"],
     run: () => ctx.openSettings("shortcuts"),
   });
+
+  if (ctx.hasActiveTab) {
+    commands.push({
+      id: "open-in-new-window",
+      title: "Open in New Window",
+      keywords: ["detach", "window", "popout", "second monitor"],
+      run: ctx.openActiveInNewWindow,
+    });
+  }
 
   commands.push(toggleThemeCommand());
 

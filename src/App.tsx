@@ -1,3 +1,4 @@
+import { openEditorWindow } from "@/lib/editorWindow";
 import { AgendaView } from "@/modules/agenda";
 import {
   EditorPane,
@@ -178,6 +179,11 @@ function App() {
     [openTab],
   );
 
+  const openInWindow = useCallback(
+    (path: string) => void openEditorWindow(path, rootPath),
+    [rootPath],
+  );
+
   const openMermaid = useCallback(
     (payload: { blockKey: string; text: string }) => {
       setMermaidDock({
@@ -229,6 +235,9 @@ function App() {
         vaultFiles,
         openFile: (path) => openFile(path),
         runEditorAction: (action) => editorRef.current?.runAction(action),
+        openActiveInNewWindow: () => {
+          if (activePath) openInWindow(activePath);
+        },
         openSettings: (section) => {
           settingsNav.set(section);
           setMainView("settings");
@@ -243,6 +252,7 @@ function App() {
       tabs.length,
       vaultFiles,
       openFile,
+      openInWindow,
     ],
   );
 
@@ -321,6 +331,7 @@ function App() {
               rootPath={rootPath}
               activeFilePath={activePath}
               onOpenFile={(path) => openFile(path)}
+              onOpenInWindow={openInWindow}
               onOpenFolder={() => void handleOpenFolder()}
               onPathRenamed={handlePathRenamed}
               onPathDeleted={handlePathDeleted}
@@ -363,6 +374,7 @@ function App() {
                     onClose={closeTab}
                     onCloseOthers={closeOthers}
                     onCloseAll={closeAll}
+                    onOpenInWindow={openInWindow}
                   />
                 )}
                 {activeTab ? (

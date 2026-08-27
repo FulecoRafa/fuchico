@@ -2476,3 +2476,34 @@ input {
 .explorer-notice-error {
   color: var(--destructive, #e5484d);
 }
+
+/* Secondary single-file editor window (issue #29) */
+.editor-window {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+}
+.editor-window > .editor-pane {
+  flex: 1;
+  min-height: 0;
+}
+.editor-conflict {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  background: color-mix(in oklch, var(--destructive) 12%, var(--background));
+  border-bottom: 1px solid var(--border);
+}
+.editor-conflict button {
+  font: inherit;
+  padding: 1px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: inherit;
+  cursor: pointer;
+}

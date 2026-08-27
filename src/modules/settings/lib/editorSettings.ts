@@ -120,6 +120,17 @@ function emit() {
   for (const listener of listeners) listener();
 }
 
+// Each OS window runs its own JS instance of this module; `storage` fires in
+// the *other* windows when one of them writes, so re-read and re-emit there
+// (issue #29).
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key !== STORAGE_KEY) return;
+    state = load();
+    emit();
+  });
+}
+
 /** Module-level pub-sub so `SettingsView` and `EditorPane` -- two separately
  * mounted components -- stay in sync without a React context provider. */
 export const editorSettingsStore = {
