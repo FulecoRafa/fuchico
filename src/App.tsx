@@ -1,5 +1,9 @@
 import { AgendaView } from "@/modules/agenda";
-import { EditorPane, useVaultFiles } from "@/modules/editor";
+import {
+  EditorPane,
+  type EditorPaneHandle,
+  useVaultFiles,
+} from "@/modules/editor";
 import { FileExplorer } from "@/modules/explorer";
 import {
   buildAppCommands,
@@ -9,6 +13,7 @@ import {
 } from "@/modules/palette";
 import { SearchPanel } from "@/modules/search";
 import { SettingsView } from "@/modules/settings";
+import { settingsNav } from "@/modules/settings/lib/settingsNav";
 import { useTheme } from "@/modules/settings/lib/useTheme";
 import { useZoomShortcuts } from "@/modules/settings/lib/useZoomShortcuts";
 import { TabBar, useTabs } from "@/modules/tabs";
@@ -90,6 +95,7 @@ function App() {
   const [quickSwitcherOpen, setQuickSwitcherOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const dockPanelRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<EditorPaneHandle>(null);
   const dockWidthRef = useRef(DEFAULT_DOCK_WIDTH);
   const dockResizeRef = useRef<{
     pointerId: number;
@@ -222,13 +228,10 @@ function App() {
         rootPath,
         vaultFiles,
         openFile: (path) => openFile(path),
-        openShortcuts: () => {
+        runEditorAction: (action) => editorRef.current?.runAction(action),
+        openSettings: (section) => {
+          settingsNav.set(section);
           setMainView("settings");
-          requestAnimationFrame(() =>
-            document
-              .getElementById("settings-shortcuts")
-              ?.scrollIntoView({ block: "start" }),
-          );
         },
       }),
     [
@@ -377,6 +380,7 @@ function App() {
                     </Suspense>
                   ) : (
                     <EditorPane
+                      ref={editorRef}
                       key={activeTab.path}
                       path={activeTab.path}
                       focusLine={activeTab.focusLine}

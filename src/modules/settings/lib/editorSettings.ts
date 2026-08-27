@@ -10,7 +10,10 @@ export type ShortcutAction =
   | "insertDate"
   | "insertDateTime"
   | "insertRegion"
-  | "insertTable";
+  | "insertTable"
+  | "toggleTaskLine"
+  | "pickDueDate"
+  | "pickRecurrence";
 
 export type Shortcuts = Record<ShortcutAction, string>;
 
@@ -78,6 +81,9 @@ export const DEFAULT_SETTINGS: EditorSettings = {
     insertDateTime: "Mod-Alt-d",
     insertRegion: "Mod-Shift-r",
     insertTable: "Mod-Alt-t",
+    toggleTaskLine: "Mod-Shift-Enter",
+    pickDueDate: "Mod-Shift-.",
+    pickRecurrence: "Mod-Shift-,",
   },
   foldStartMarker: ":::fold",
   foldEndMarker: ":::endfold",

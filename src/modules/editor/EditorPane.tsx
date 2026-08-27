@@ -1,5 +1,9 @@
 import { frontmatterExtension } from "@/modules/frontmatter";
-import { useEditorSettings } from "@/modules/settings/lib/editorSettings";
+import {
+  editorSettingsStore,
+  type ShortcutAction,
+  useEditorSettings,
+} from "@/modules/settings/lib/editorSettings";
 import { StatusBar } from "@/modules/statusbar";
 import { redo, undo } from "@codemirror/commands";
 import { EditorView, keymap } from "@codemirror/view";
@@ -47,8 +51,9 @@ import {
   mermaidPreviewExtension,
 } from "./lib/mermaidPreviewExtension";
 import { scrollPersistenceExtension } from "./lib/scrollPositions";
-import { shortcutsExtension } from "./lib/shortcuts";
+import { buildShortcutCommands, shortcutsExtension } from "./lib/shortcuts";
 import { tagCompletionProvider, tagsExtension } from "./lib/tags";
+import { taskCompletionProvider } from "./lib/taskHelpers";
 import { useDocument } from "./lib/useDocument";
 import {
   wikilinkCompletionProvider,
@@ -59,6 +64,8 @@ import { OutlineOverlay } from "./OutlineOverlay";
 
 export type EditorPaneHandle = {
   focus: () => void;
+  /** Run a rebindable editor action (same set as Settings › Shortcuts). */
+  runAction: (action: ShortcutAction) => void;
   undo: () => void;
   redo: () => void;
 };
@@ -254,6 +261,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           headingCompletionProvider(() => vaultFilesRef.current ?? []),
           // `#tag` completion from the vault-wide tag index.
           tagCompletionProvider(() => getAllTagsRef.current?.() ?? []),
+          taskCompletionProvider(),
           // Plain-text word completion from words already in the document.
           wordCompletionProvider(),
         ]),
@@ -379,6 +387,17 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       () => ({
         focus: () => {
           cmRef.current?.view?.focus();
+        },
+        runAction: (action) => {
+          const view = cmRef.current?.view;
+          if (!view) return;
+          const s = editorSettingsStore.get();
+          const commands = buildShortcutCommands(
+            { start: s.foldStartMarker, end: s.foldEndMarker },
+            () => openOutlineRef.current(),
+          );
+          view.focus();
+          commands[action](view);
         },
         undo: () => {
           const view = cmRef.current?.view;

@@ -2,39 +2,7 @@ import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { ShortcutAction } from "./lib/editorSettings";
 import { useEditorSettings } from "./lib/editorSettings";
-
-const ACTIONS: { value: ShortcutAction; label: string; desc: string }[] = [
-  {
-    value: "openOutline",
-    label: "Go to header",
-    desc: "Open the document outline (fuzzy-searchable header list).",
-  },
-  {
-    value: "toggleCheckboxAtCursor",
-    label: "Toggle checkbox",
-    desc: "Mark/unmark the checkbox on the cursor's line.",
-  },
-  {
-    value: "insertDate",
-    label: "Insert date",
-    desc: "Insert today's date at the cursor.",
-  },
-  {
-    value: "insertDateTime",
-    label: "Insert date & time",
-    desc: "Insert the current date and time at the cursor.",
-  },
-  {
-    value: "insertRegion",
-    label: "Insert fold region",
-    desc: "Wrap the selected lines in a foldable region (or insert an empty one at the cursor).",
-  },
-  {
-    value: "insertTable",
-    label: "Insert table",
-    desc: "Insert a 2x2 Markdown table at the cursor and start editing the header.",
-  },
-];
+import { SHORTCUT_ACTIONS as ACTIONS } from "./lib/shortcutActions";
 
 /** Shortcuts that are built in (not rebindable), listed so the whole map is
  * discoverable in one searchable place (issue #7). */
@@ -74,6 +42,12 @@ const FIXED: { group: string; label: string; desc: string; keys: string }[] = [
     label: "Find / replace",
     desc: "Search within the current file.",
     keys: "Mod-f",
+  },
+  {
+    group: "Editor",
+    label: "Task date / repeat autocomplete",
+    desc: "Type @due, @today, @repeat (or 📅 / 🔁) on a task line to pick a date or rule.",
+    keys: "@",
   },
   {
     group: "Editor",

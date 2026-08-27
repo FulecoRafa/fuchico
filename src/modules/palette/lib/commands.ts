@@ -1,4 +1,12 @@
-import { editorSettingsStore } from "@/modules/settings/lib/editorSettings";
+import {
+  editorSettingsStore,
+  type ShortcutAction,
+} from "@/modules/settings/lib/editorSettings";
+import {
+  SETTINGS_SECTIONS,
+  type SettingsSectionId,
+} from "@/modules/settings/lib/settingsNav";
+import { SHORTCUT_ACTIONS } from "@/modules/settings/lib/shortcutActions";
 import {
   createFromTemplate,
   listTemplates,
@@ -31,7 +39,8 @@ export type CommandContext = {
   vaultFiles: readonly string[];
   openFile: (path: string) => void;
   /** Jumps to the searchable keyboard-shortcuts list in Settings. */
-  openShortcuts: () => void;
+  openSettings: (section: SettingsSectionId) => void;
+  runEditorAction: (action: ShortcutAction) => void;
 };
 
 function toggleThemeCommand(): AppCommand {
@@ -79,6 +88,20 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
       keywords: ["preferences", "config", "view"],
       run: () => ctx.setMainView("settings"),
     },
+    ...(ctx.hasActiveTab
+      ? SHORTCUT_ACTIONS.map((a) => ({
+          id: `editor:${a.value}`,
+          title: `Editor: ${a.label}`,
+          keywords: ["task", "insert", "editor", a.desc],
+          run: () => ctx.runEditorAction(a.value),
+        }))
+      : []),
+    ...SETTINGS_SECTIONS.map((s) => ({
+      id: `settings:${s.id}`,
+      title: `Settings: ${s.label}`,
+      keywords: ["preferences", "config", ...s.keywords],
+      run: () => ctx.openSettings(s.id),
+    })),
     {
       id: "open-folder",
       title: "Open Folder…",
@@ -149,7 +172,7 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
     id: "keyboard-shortcuts",
     title: "Keyboard Shortcuts",
     keywords: ["keys", "hotkeys", "bindings", "help"],
-    run: () => ctx.openShortcuts(),
+    run: () => ctx.openSettings("shortcuts"),
   });
 
   commands.push(toggleThemeCommand());
