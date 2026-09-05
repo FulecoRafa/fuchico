@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import {
@@ -16,6 +17,7 @@ type FontsState =
   | { status: "error"; message: string };
 
 export function FontSection() {
+  const { t } = useI18n();
   const { settings, setSettings } = useEditorSettings();
   const [fonts, setFonts] = useState<FontsState>({ status: "loading" });
 
@@ -35,20 +37,17 @@ export function FontSection() {
 
   return (
     <div className="settings-section">
-      <div className="settings-section-title">Font</div>
-      <p className="settings-section-desc">
-        Choose fonts installed on this machine for the app's interface and for
-        the editor.
-      </p>
+      <div className="settings-section-title">{t("settings.font.title")}</div>
+      <p className="settings-section-desc">{t("settings.font.desc")}</p>
       <div className="settings-form">
         <div className="settings-field">
-          <span className="settings-label">UI font</span>
+          <span className="settings-label">{t("settings.font.uiFont")}</span>
           {fonts.status === "loading" && (
-            <span className="settings-hint">Loading system fonts…</span>
+            <span className="settings-hint">{t("settings.font.loading")}</span>
           )}
           {fonts.status === "error" && (
             <span className="settings-hint">
-              Couldn't list system fonts: {fonts.message}
+              {t("settings.font.error", { message: fonts.message })}
             </span>
           )}
           {fonts.status === "loaded" && (
@@ -57,7 +56,7 @@ export function FontSection() {
               value={settings.uiFont}
               onChange={(e) => setSettings({ uiFont: e.target.value })}
             >
-              <option value="">Default</option>
+              <option value="">{t("common.default")}</option>
               {fonts.families.map((family) => (
                 <option key={family} value={family}>
                   {family}
@@ -68,13 +67,15 @@ export function FontSection() {
         </div>
 
         <div className="settings-field">
-          <span className="settings-label">Editor font</span>
+          <span className="settings-label">
+            {t("settings.font.editorFont")}
+          </span>
           {fonts.status === "loading" && (
-            <span className="settings-hint">Loading system fonts…</span>
+            <span className="settings-hint">{t("settings.font.loading")}</span>
           )}
           {fonts.status === "error" && (
             <span className="settings-hint">
-              Couldn't list system fonts: {fonts.message}
+              {t("settings.font.error", { message: fonts.message })}
             </span>
           )}
           {fonts.status === "loaded" && (
@@ -83,7 +84,7 @@ export function FontSection() {
               value={settings.editorFont}
               onChange={(e) => setSettings({ editorFont: e.target.value })}
             >
-              <option value="">Default</option>
+              <option value="">{t("common.default")}</option>
               {fonts.families.map((family) => (
                 <option key={family} value={family}>
                   {family}
@@ -94,7 +95,9 @@ export function FontSection() {
         </div>
 
         <div className="settings-field">
-          <span className="settings-label">Editor font size</span>
+          <span className="settings-label">
+            {t("settings.font.editorFontSize")}
+          </span>
           <input
             type="number"
             className="settings-input settings-input-number"
@@ -108,12 +111,12 @@ export function FontSection() {
             }
           />
           <span className="settings-hint">
-            Also Cmd/Ctrl +, − and 0 to reset.
+            {t("settings.font.editorFontSizeHint")}
           </span>
         </div>
 
         <div className="settings-field">
-          <span className="settings-label">UI zoom</span>
+          <span className="settings-label">{t("settings.font.uiZoom")}</span>
           <input
             type="number"
             className="settings-input settings-input-number"
@@ -127,13 +130,11 @@ export function FontSection() {
               })
             }
           />
-          <span className="settings-hint">
-            Percent. Also Cmd/Ctrl Shift +, − and 0 to reset.
-          </span>
+          <span className="settings-hint">{t("settings.font.uiZoomHint")}</span>
         </div>
 
         <div className="settings-field">
-          <span className="settings-label">Preview</span>
+          <span className="settings-label">{t("common.preview")}</span>
           <div className="theme-preview">
             <div className="theme-preview-toolbar">
               <span className="theme-preview-dot" />
@@ -147,9 +148,11 @@ export function FontSection() {
                   settings.uiFont ? { fontFamily: `"${settings.uiFont}"` } : {}
                 }
               >
-                <span className="btn theme-preview-btn">Primary</span>
+                <span className="btn theme-preview-btn">
+                  {t("settings.preview.primary")}
+                </span>
                 <span className="btn btn-secondary theme-preview-btn">
-                  Secondary
+                  {t("settings.preview.secondary")}
                 </span>
               </div>
               <p
@@ -158,7 +161,7 @@ export function FontSection() {
                   settings.uiFont ? { fontFamily: `"${settings.uiFont}"` } : {}
                 }
               >
-                The quick brown fox jumps over the lazy dog.
+                {t("settings.preview.pangram")}
               </p>
               <pre
                 className="theme-preview-code"

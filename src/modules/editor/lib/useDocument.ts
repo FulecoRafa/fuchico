@@ -80,26 +80,31 @@ export function useDocument({ path, onDirtyChange }: Options) {
     };
   }, [path, clearAutosaveTimer]);
 
-  // Skipped while dirty (never clobber unsaved edits).
-  const reload = useCallback((): boolean => {
-    if (dirtyRef.current) return false;
-    void invoke<ReadResult>("fs_read_file", { path })
-      .then((res) => {
-        if (res.kind === "text") {
-          if (res.content === savedRef.current) return;
-          savedRef.current = res.content;
-          bufferRef.current = res.content;
-          setDirty(false);
-          setDoc({ status: "ready", content: res.content, size: res.size });
-        } else if (res.kind === "binary") {
-          setDoc({ status: "binary", size: res.size });
-        } else if (res.kind === "toolarge") {
-          setDoc({ status: "toolarge", size: res.size, limit: res.limit });
-        }
-      })
-      .catch((e) => setDoc({ status: "error", message: String(e) }));
-    return true;
-  }, [path]);
+  // Skipped while dirty (never clobber unsaved edits) unless `force` — the
+  // caller then confirmed with the user (see the conflict banner in
+  // EditorPane).
+  const reload = useCallback(
+    (force = false): boolean => {
+      if (dirtyRef.current && !force) return false;
+      void invoke<ReadResult>("fs_read_file", { path })
+        .then((res) => {
+          if (res.kind === "text") {
+            if (res.content === savedRef.current) return;
+            savedRef.current = res.content;
+            bufferRef.current = res.content;
+            setDirty(false);
+            setDoc({ status: "ready", content: res.content, size: res.size });
+          } else if (res.kind === "binary") {
+            setDoc({ status: "binary", size: res.size });
+          } else if (res.kind === "toolarge") {
+            setDoc({ status: "toolarge", size: res.size, limit: res.limit });
+          }
+        })
+        .catch((e) => setDoc({ status: "error", message: String(e) }));
+      return true;
+    },
+    [path],
+  );
 
   const save = useCallback(async () => {
     clearAutosaveTimer();

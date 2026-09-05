@@ -1,4 +1,5 @@
 import { ContextMenu, type ContextMenuItem } from "@/lib/ContextMenu";
+import { useI18n } from "@/lib/i18n";
 import { X } from "lucide-react";
 import { useState } from "react";
 import type { Tab } from "./lib/useTabs";
@@ -10,6 +11,8 @@ type Props = {
   onClose: (path: string) => void;
   onCloseOthers: (path: string) => void;
   onCloseAll: () => void;
+  /** Detaches the tab into its own OS window (issue #29). */
+  onOpenInWindow?: (path: string) => void;
 };
 
 type MenuState = { x: number; y: number; path: string } | null;
@@ -26,18 +29,29 @@ export function TabBar({
   onClose,
   onCloseOthers,
   onCloseAll,
+  onOpenInWindow,
 }: Props) {
+  const { t } = useI18n();
   const [menu, setMenu] = useState<MenuState>(null);
 
   const menuItems: ContextMenuItem[] = menu
     ? [
-        { label: "Close", onSelect: () => onClose(menu.path) },
+        { label: t("tabs.close"), onSelect: () => onClose(menu.path) },
         {
-          label: "Close others",
+          label: t("tabs.closeOthers"),
           disabled: tabs.length < 2,
           onSelect: () => onCloseOthers(menu.path),
         },
-        { label: "Close all", onSelect: onCloseAll },
+        { label: t("tabs.closeAll"), onSelect: onCloseAll },
+        ...(onOpenInWindow
+          ? ([
+              { kind: "separator" },
+              {
+                label: t("tabs.openInNewWindow"),
+                onSelect: () => onOpenInWindow(menu.path),
+              },
+            ] satisfies ContextMenuItem[])
+          : []),
       ]
     : [];
 
@@ -70,7 +84,7 @@ export function TabBar({
             <button
               type="button"
               className="tab-close-btn"
-              title="Close"
+              title={t("tabs.close")}
               onClick={(e) => {
                 e.stopPropagation();
                 onClose(tab.path);

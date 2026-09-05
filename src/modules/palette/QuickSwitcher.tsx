@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { fuzzyMatch } from "@/modules/editor/lib/fuzzyMatch";
 import { FileText } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -26,6 +27,7 @@ function relativeTo(root: string, path: string): string {
 }
 
 export function QuickSwitcher({ rootPath, onOpenFile, onClose }: Props) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -76,7 +78,7 @@ export function QuickSwitcher({ rootPath, onOpenFile, onClose }: Props) {
           ref={inputRef}
           className="palette-overlay-input"
           type="text"
-          placeholder="Go to file…"
+          placeholder={t("palette.goToFile")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -98,20 +100,26 @@ export function QuickSwitcher({ rootPath, onOpenFile, onClose }: Props) {
         />
         <div className="palette-overlay-list">
           {!rootPath && (
-            <div className="palette-overlay-empty">Open a folder first</div>
+            <div className="palette-overlay-empty">
+              {t("palette.openFolderFirst")}
+            </div>
           )}
           {rootPath && filesState.status === "loading" && (
-            <div className="palette-overlay-empty">Scanning vault…</div>
+            <div className="palette-overlay-empty">
+              {t("palette.scanningVault")}
+            </div>
           )}
           {rootPath && filesState.status === "error" && (
             <div className="palette-overlay-empty">
-              Couldn't read vault: {filesState.message}
+              {t("palette.cantReadVault", { message: filesState.message })}
             </div>
           )}
           {rootPath &&
             filesState.status === "loaded" &&
             results.length === 0 && (
-              <div className="palette-overlay-empty">No files found</div>
+              <div className="palette-overlay-empty">
+                {t("palette.noFilesFound")}
+              </div>
             )}
           {results.map((r, i) => (
             <button

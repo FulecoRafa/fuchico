@@ -1,7 +1,11 @@
-import type { Shortcuts } from "@/modules/settings/lib/editorSettings";
+import type {
+  ShortcutAction,
+  Shortcuts,
+} from "@/modules/settings/lib/editorSettings";
 import { type ChangeSpec, EditorSelection, Prec } from "@codemirror/state";
 import { type Command, type EditorView, keymap } from "@codemirror/view";
 import { DEFAULT_TABLE_MARKDOWN, setTableEdit } from "./tableStyle";
+import { pickDueDate, pickRecurrence, toggleTaskLine } from "./taskHelpers";
 
 const CHECKBOX_RE = /\[([ xX])\]/;
 
@@ -119,12 +123,11 @@ function insertTable(view: EditorView): boolean {
   return true;
 }
 
-export function shortcutsExtension(
-  bindings: Shortcuts,
+export function buildShortcutCommands(
   foldMarkers: { start: string; end: string },
   onOpenOutline: () => void,
-) {
-  const commands: Record<string, Command> = {
+): Record<ShortcutAction, Command> {
+  return {
     openOutline: () => {
       onOpenOutline();
       return true;
@@ -135,8 +138,18 @@ export function shortcutsExtension(
     insertRegion: (view) =>
       insertRegion(view, foldMarkers.start, foldMarkers.end),
     insertTable: insertTable,
+    toggleTaskLine,
+    pickDueDate,
+    pickRecurrence,
   };
+}
 
+export function shortcutsExtension(
+  bindings: Shortcuts,
+  foldMarkers: { start: string; end: string },
+  onOpenOutline: () => void,
+) {
+  const commands = buildShortcutCommands(foldMarkers, onOpenOutline);
   return Prec.highest(
     keymap.of(
       (Object.keys(bindings) as (keyof Shortcuts)[]).map((action) => ({

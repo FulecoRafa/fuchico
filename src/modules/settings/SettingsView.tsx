@@ -1,13 +1,19 @@
-import { RefreshCw, Trash2 } from "lucide-react";
-import { AccountForm } from "./AccountForm";
+import { useI18n } from "@/lib/i18n";
+import { Search } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { AboutSection } from "./AboutSection";
 import { EditorBehaviorSection } from "./EditorBehaviorSection";
-import { FolderLinkTable } from "./FolderLinkTable";
 import { FoldingSection } from "./FoldingSection";
 import { FontSection } from "./FontSection";
+import { IntegrationsSection } from "./IntegrationsSection";
 import { KeybindingSection } from "./KeybindingSection";
-import { useCalDavAccounts } from "./lib/useCalDavAccounts";
-import { useCalDavLinks } from "./lib/useCalDavLinks";
-import { useCalDavSync } from "./lib/useCalDavSync";
+import { LanguageSection } from "./LanguageSection";
+import {
+  SETTINGS_SECTIONS,
+  type SettingsSectionId,
+  settingsNav,
+  useSettingsSection,
+} from "./lib/settingsNav";
 import { ShortcutsSection } from "./ShortcutsSection";
 import { ThemeSection } from "./ThemeSection";
 import { VaultSection } from "./VaultSection";
@@ -16,115 +22,150 @@ type Props = {
   rootPath: string | null;
 };
 
-export function SettingsView({ rootPath }: Props) {
-  const accounts = useCalDavAccounts();
-  const links = useCalDavLinks();
-  const sync = useCalDavSync();
+function SectionBody({
+  id,
+  rootPath,
+}: {
+  id: SettingsSectionId;
+  rootPath: string | null;
+}) {
+  switch (id) {
+    case "appearance":
+      return (
+        <>
+          <LanguageSection />
+          <ThemeSection />
+          <FontSection />
+        </>
+      );
+    case "editor":
+      return (
+        <>
+          <KeybindingSection />
+          <EditorBehaviorSection />
+          <FoldingSection />
+        </>
+      );
+    case "shortcuts":
+      return <ShortcutsSection />;
+    case "vault":
+      return <VaultSection />;
+    case "integrations":
+      return <IntegrationsSection rootPath={rootPath} />;
+    case "about":
+      return <AboutSection />;
+  }
+}
 
-  const accountList =
-    accounts.state.status === "loaded" ? accounts.state.accounts : [];
-  const lastReports = sync.lastReports;
+/** Elements that count as one "setting" for search filtering. */
+const FIELD_SELECTOR =
+  ".settings-field, .settings-shortcut-row, .settings-account-row, .settings-link-row, .settings-actions";
+
+/** Hide sections/fields whose text doesn't match `query`. Walking the DOM
+ * keeps every *Section component untouched: whatever they render is
+ * searchable by its visible text (issue #46). */
+function applyFilter(root: HTMLElement, query: string) {
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const matches = (el: Element) => {
+    const text = el.textContent?.toLowerCase() ?? "";
+    return terms.every((t) => text.includes(t));
+  };
+  let visible = 0;
+  for (const section of root.querySelectorAll<HTMLElement>(
+    ".settings-section",
+  )) {
+    const fields = section.querySelectorAll<HTMLElement>(FIELD_SELECTOR);
+    const head = [
+      section.querySelector(".settings-section-title")?.textContent,
+      section.querySelector(".settings-section-desc")?.textContent,
+    ]
+      .join(" ")
+      .toLowerCase();
+    const headMatches = terms.every((t) => head.includes(t));
+    let shown = 0;
+    for (const f of fields) {
+      const show = terms.length === 0 || headMatches || matches(f);
+      f.hidden = !show;
+      if (show) shown++;
+    }
+    const sectionVisible =
+      terms.length === 0 ||
+      headMatches ||
+      shown > 0 ||
+      (fields.length === 0 && matches(section));
+    section.hidden = !sectionVisible;
+    if (sectionVisible) visible++;
+  }
+  return visible;
+}
+
+export function SettingsView({ rootPath }: Props) {
+  const { t } = useI18n();
+  const section = useSettingsSection();
+  const [query, setQuery] = useState("");
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [noResults, setNoResults] = useState(false);
+  const searching = query.trim().length > 0;
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-filter whenever the rendered section set or query changes
+  useLayoutEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    setNoResults(applyFilter(el, searching ? query : "") === 0);
+  }, [query, searching, section]);
 
   return (
     <div className="settings-view">
-      <ThemeSection />
-
-      <FontSection />
-
-      <KeybindingSection />
-
-      <EditorBehaviorSection />
-
-      <ShortcutsSection />
-
-      <FoldingSection />
-
-      <VaultSection />
-
-      <div className="settings-section">
-        <div className="settings-section-title">CalDAV Sync</div>
-        <p className="settings-section-desc">
-          Link folders to a CalDAV calendar (e.g. iCloud Reminders) so checkbox
-          tasks in your notes sync to your phone and back.
-        </p>
-      </div>
-
-      <div className="settings-section">
-        <div className="settings-section-title">Accounts</div>
-        {accountList.length > 0 && (
-          <div className="settings-account-list">
-            {accountList.map((a) => (
-              <div key={a.id} className="settings-account-row">
-                <span className="settings-account-row-user">{a.username}</span>
-                <span className="settings-account-row-server">
-                  {a.serverUrl}
-                </span>
-                <button
-                  type="button"
-                  className="settings-icon-btn"
-                  title="Remove account"
-                  onClick={() => void accounts.removeAccount(a.id)}
-                >
-                  <Trash2 size={13} strokeWidth={1.75} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-        <AccountForm accounts={accounts} />
-      </div>
-
-      <div className="settings-section">
-        <div className="settings-section-title">Linked Folders</div>
-        <FolderLinkTable
-          accounts={accounts}
-          links={links}
-          sync={sync}
-          defaultFolderPath={rootPath}
-        />
-      </div>
-
-      <div className="settings-section">
-        <div className="settings-section-title">Sync</div>
-        <div className="settings-actions">
+      <nav className="settings-nav" aria-label={t("settings.sectionsAria")}>
+        <div className="settings-search">
+          <Search
+            size={13}
+            strokeWidth={1.75}
+            className="settings-search-icon"
+          />
+          <input
+            type="search"
+            className="settings-input"
+            placeholder={t("settings.searchPlaceholder")}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+        {SETTINGS_SECTIONS.map((s) => (
           <button
             type="button"
-            className="btn"
-            disabled={sync.syncing}
-            onClick={() => void sync.syncNow()}
+            key={s.id}
+            className={
+              s.id === section && !searching
+                ? "settings-nav-item settings-nav-item-active"
+                : "settings-nav-item"
+            }
+            onClick={() => {
+              setQuery("");
+              settingsNav.set(s.id);
+            }}
           >
-            <RefreshCw size={13} strokeWidth={1.75} />
-            {sync.syncing ? "Syncing…" : "Sync Now"}
+            {t(s.labelKey)}
           </button>
-        </div>
-        {sync.error && (
-          <div className="settings-status settings-status-error">
-            {sync.error}
-          </div>
-        )}
-        {lastReports && (
-          <div className="settings-sync-log">
-            {lastReports.map((r) => (
-              <div key={r.folder} className="settings-sync-log-row">
-                <span className="settings-sync-log-folder" title={r.folder}>
-                  {r.folder.split(/[\\/]/).filter(Boolean).pop() ?? r.folder}
-                </span>
-                <span className="settings-sync-log-summary">
-                  +{r.pushedNew} new, {r.pushedUpdated} pushed,{" "}
-                  {r.pulledUpdated} pulled, {r.pulledNew} from server
-                  {r.errors.length > 0 ? `, ${r.errors.length} error(s)` : ""}
-                </span>
-                {r.errors.map((err) => (
-                  <div
-                    key={err}
-                    className="settings-status settings-status-error"
-                  >
-                    {err}
-                  </div>
-                ))}
+        ))}
+      </nav>
+      <div className="settings-content" ref={contentRef}>
+        {searching ? (
+          <>
+            {noResults && (
+              <div className="settings-status">
+                {t("settings.noResults", { query })}
+              </div>
+            )}
+            {SETTINGS_SECTIONS.map((s) => (
+              <div key={s.id} className="settings-group" data-section={s.id}>
+                <div className="settings-group-title">{t(s.labelKey)}</div>
+                <SectionBody id={s.id} rootPath={rootPath} />
               </div>
             ))}
-          </div>
+          </>
+        ) : (
+          <SectionBody id={section} rootPath={rootPath} />
         )}
       </div>
     </div>

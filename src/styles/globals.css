@@ -1923,10 +1923,78 @@ input {
   white-space: nowrap;
 }
 
+.palette-overlay-alias {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+.palette-overlay-alias + .palette-overlay-keys {
+  margin-left: 0;
+}
+
+.palette-overlay-keys {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-family: inherit;
+  font-size: 10.5px;
+  color: var(--muted-foreground);
+  background: color-mix(in oklch, var(--muted-foreground) 12%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+.palette-overlay-item-active .palette-overlay-keys {
+  color: inherit;
+  border-color: color-mix(in oklch, currentColor 30%, transparent);
+}
+
 .palette-overlay-highlight {
   background: color-mix(in oklch, var(--syntax-number) 35%, transparent);
   color: inherit;
   border-radius: 2px;
+}
+
+/* ── codemirror-helix command/search panel ──────────────────────────────────
+   The package styles these with background/color: inherit on purpose, and our
+   helixModeReporterExtension forces the shared .cm-panels-bottom wrapper
+   transparent (to hide the stray empty bar) — so without explicit colors the
+   `/` search line renders see-through over the document text. */
+
+.cm-editor .cm-hx-command-panel {
+  background: var(--secondary) !important;
+  color: var(--foreground) !important;
+  border-top: 1px solid var(--border) !important;
+  padding: 3px 8px;
+  font-size: 12px;
+}
+
+.cm-editor .cm-hx-command-input {
+  background: transparent !important;
+  color: var(--foreground) !important;
+  caret-color: var(--foreground);
+}
+
+.cm-editor .cm-hx-command-popup {
+  background: var(--secondary) !important;
+  color: var(--foreground) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+}
+
+.cm-editor .cm-hx-command-help {
+  border-color: var(--border) !important;
+}
+
+.cm-editor .cm-hx-selected-option {
+  background: var(--accent) !important;
+  color: var(--accent-foreground) !important;
 }
 
 /* ── Custom fold regions (:::fold / :::endfold) ─────────────────────────── */
@@ -2336,4 +2404,174 @@ input {
 
 .search-file-group .search-row {
   padding-left: 16px;
+}
+
+/* Settings: section navigation + search (issue #46) */
+.settings-view {
+  display: flex;
+  max-width: none;
+  padding: 0;
+}
+
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+  width: 190px;
+  padding: 16px 10px;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.settings-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 4px 10px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.settings-search .settings-input {
+  border: none;
+  background: transparent;
+  padding: 5px 0;
+  width: 100%;
+  min-width: 0;
+}
+
+.settings-search-icon {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+}
+
+.settings-nav-item {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.settings-nav-item:hover {
+  background: color-mix(in oklch, var(--foreground) 5%, transparent);
+  color: var(--foreground);
+}
+
+.settings-nav-item-active {
+  background: color-mix(in oklch, var(--foreground) 9%, transparent);
+  color: var(--foreground);
+  font-weight: 500;
+}
+
+.settings-content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 24px 28px 40px;
+}
+
+.settings-content > *,
+.settings-group {
+  max-width: 560px;
+}
+
+.settings-group-title {
+  margin: 8px 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.settings-group:has(> .settings-section:not([hidden])) {
+  display: block;
+}
+
+.settings-group:not(:has(> .settings-section:not([hidden]))) {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .settings-view {
+    flex-direction: column;
+  }
+  .settings-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-search {
+    width: 100%;
+  }
+}
+
+/* Explorer multi-select / drag feedback (issue #44) */
+.tree-row-cut {
+  opacity: 0.55;
+}
+.tree-drag-ghost {
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.explorer-header-drop-target {
+  outline: 1.5px solid var(--ring);
+  outline-offset: -1.5px;
+  background: var(--accent);
+}
+.explorer-notice {
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  border-bottom: 1px solid var(--border);
+}
+.explorer-notice-error {
+  color: var(--destructive, #e5484d);
+}
+
+/* Secondary single-file editor window (issue #29) */
+.editor-window {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+}
+.editor-window > .editor-pane {
+  flex: 1;
+  min-height: 0;
+}
+.editor-conflict {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  background: color-mix(in oklch, var(--destructive) 12%, var(--background));
+  border-bottom: 1px solid var(--border);
+}
+.editor-conflict button {
+  font: inherit;
+  padding: 1px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: inherit;
+  cursor: pointer;
 }

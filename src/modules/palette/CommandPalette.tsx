@@ -1,4 +1,6 @@
+import { useI18n } from "@/lib/i18n";
 import { fuzzyMatch } from "@/modules/editor/lib/fuzzyMatch";
+import { formatBinding } from "@/modules/settings/lib/fixedShortcuts";
 import { Command as CommandIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AppCommand } from "./lib/commands";
@@ -6,20 +8,81 @@ import { HighlightedText } from "./lib/HighlightedText";
 
 type Props = {
   commands: AppCommand[];
+  /** Pre-filled query, e.g. ":" when opened via `:` in Helix normal mode. */
+  initialQuery?: string;
+  /** Enables `:<line>` (e.g. ":42") to jump the active editor to a line. */
+  onGoToLine?: (line: number) => void;
   onClose: () => void;
 };
 
-type Ranked = { command: AppCommand; indices: number[]; score: number };
+type Ranked = {
+  command: AppCommand;
+  indices: number[];
+  score: number;
+  /** The `:` alias this command matched on (shown as a row chip). */
+  alias?: string;
+};
 
-export function CommandPalette({ commands, onClose }: Props) {
-  const [query, setQuery] = useState("");
+export function CommandPalette({
+  commands,
+  initialQuery,
+  onGoToLine,
+  onClose,
+}: Props) {
+  const { t, locale } = useI18n();
+  const [query, setQuery] = useState(initialQuery ?? "");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `t` is a stable module-level function that reads the locale; `locale` stands in for it so results re-rank when the language changes
   const results: Ranked[] = useMemo(() => {
     const q = query.trim();
     if (!q) {
       return commands.map((command) => ({ command, indices: [], score: 0 }));
+    }
+    // Helix/vim-style command-line queries: `:q` matches aliases by prefix,
+    // `:42` becomes a go-to-line entry, and the part after `:` still fuzzy
+    // matches titles so `:close` works too.
+    if (q.startsWith(":")) {
+      const ranked: Ranked[] = [];
+      const lineMatch = /^:(\d+)$/.exec(q);
+      if (lineMatch && onGoToLine) {
+        const line = Number(lineMatch[1]);
+        ranked.push({
+          command: {
+            id: "go-to-line",
+            title: t("command.goToLine", { n: line }),
+            run: () => onGoToLine(line),
+          },
+          indices: [],
+          score: 1000,
+        });
+      }
+      const body = q.slice(1);
+      for (const command of commands) {
+        const alias = (command.aliases ?? []).find((a) => a.startsWith(q));
+        if (alias) {
+          ranked.push({
+            command,
+            indices: [],
+            score: alias === q ? 200 : 100,
+            alias,
+          });
+          continue;
+        }
+        if (!body) continue;
+        const titleMatch = fuzzyMatch(body, command.title);
+        if (titleMatch.matched) {
+          ranked.push({
+            command,
+            indices: titleMatch.indices,
+            score: titleMatch.score,
+            alias: command.aliases?.[0],
+          });
+        }
+      }
+      ranked.sort((a, b) => b.score - a.score);
+      return ranked;
     }
     const ranked: Ranked[] = [];
     for (const command of commands) {
@@ -32,7 +95,10 @@ export function CommandPalette({ commands, onClose }: Props) {
         });
         continue;
       }
-      const keywordMatch = (command.keywords ?? []).find(
+      const extras = command.binding
+        ? [command.binding.replace(/-/g, " "), formatBinding(command.binding)]
+        : [];
+      const keywordMatch = [...(command.keywords ?? []), ...extras].find(
         (kw) => fuzzyMatch(q, kw).matched,
       );
       if (keywordMatch) {
@@ -41,7 +107,7 @@ export function CommandPalette({ commands, onClose }: Props) {
     }
     ranked.sort((a, b) => b.score - a.score);
     return ranked;
-  }, [commands, query]);
+  }, [commands, query, onGoToLine, locale]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset selection whenever the filtered result set changes
   useEffect(() => {
@@ -49,7 +115,11 @@ export function CommandPalette({ commands, onClose }: Props) {
   }, [results]);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    const input = inputRef.current;
+    if (!input) return;
+    input.focus();
+    // Put the caret after any pre-filled ":" so typing appends to it.
+    input.setSelectionRange(input.value.length, input.value.length);
   }, []);
 
   const run = (command: AppCommand) => {
@@ -66,7 +136,7 @@ export function CommandPalette({ commands, onClose }: Props) {
           ref={inputRef}
           className="palette-overlay-input"
           type="text"
-          placeholder="Run a command…"
+          placeholder={t("palette.runCommand")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -88,7 +158,9 @@ export function CommandPalette({ commands, onClose }: Props) {
         />
         <div className="palette-overlay-list">
           {results.length === 0 && (
-            <div className="palette-overlay-empty">No matching commands</div>
+            <div className="palette-overlay-empty">
+              {t("palette.noMatchingCommands")}
+            </div>
           )}
           {results.map((r, i) => (
             <button
@@ -108,6 +180,14 @@ export function CommandPalette({ commands, onClose }: Props) {
                 text={r.command.title}
                 indices={r.indices}
               />
+              {r.alias && (
+                <span className="palette-overlay-alias">{r.alias}</span>
+              )}
+              {r.command.binding && (
+                <kbd className="palette-overlay-keys">
+                  {formatBinding(r.command.binding)}
+                </kbd>
+              )}
             </button>
           ))}
         </div>

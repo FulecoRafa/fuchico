@@ -3,6 +3,8 @@ import { useSyncExternalStore } from "react";
 export type Palette = "ayu" | "dracula" | "catppuccin" | "custom";
 export type ColorMode = "system" | "light" | "dark";
 export type KeybindingMode = "helix" | "vim" | "normal";
+/** UI language setting; "system" resolves via `navigator.language`. */
+export type AppLanguage = "system" | "en" | "pt-BR";
 
 export type ShortcutAction =
   | "openOutline"
@@ -10,11 +12,16 @@ export type ShortcutAction =
   | "insertDate"
   | "insertDateTime"
   | "insertRegion"
-  | "insertTable";
+  | "insertTable"
+  | "toggleTaskLine"
+  | "pickDueDate"
+  | "pickRecurrence";
 
 export type Shortcuts = Record<ShortcutAction, string>;
 
 export type EditorSettings = {
+  /** UI language; "system" follows the OS language (issue #48). */
+  language: AppLanguage;
   palette: Palette;
   mode: ColorMode;
   customThemeCss: string;
@@ -67,6 +74,7 @@ export function clampUiScale(scale: number): number {
 const STORAGE_KEY = "helix.editorSettings";
 
 export const DEFAULT_SETTINGS: EditorSettings = {
+  language: "system",
   palette: "ayu",
   mode: "system",
   customThemeCss: "",
@@ -78,6 +86,9 @@ export const DEFAULT_SETTINGS: EditorSettings = {
     insertDateTime: "Mod-Alt-d",
     insertRegion: "Mod-Shift-r",
     insertTable: "Mod-Alt-t",
+    toggleTaskLine: "Mod-Shift-Enter",
+    pickDueDate: "Mod-Shift-.",
+    pickRecurrence: "Mod-Shift-,",
   },
   foldStartMarker: ":::fold",
   foldEndMarker: ":::endfold",
@@ -112,6 +123,17 @@ const listeners = new Set<() => void>();
 
 function emit() {
   for (const listener of listeners) listener();
+}
+
+// Each OS window runs its own JS instance of this module; `storage` fires in
+// the *other* windows when one of them writes, so re-read and re-emit there
+// (issue #29).
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key !== STORAGE_KEY) return;
+    state = load();
+    emit();
+  });
 }
 
 /** Module-level pub-sub so `SettingsView` and `EditorPane` -- two separately

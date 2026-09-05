@@ -1,5 +1,6 @@
 import { ContextMenu } from "@/lib/ContextMenu";
 import { fileRowMenuItems } from "@/lib/fileRowMenu";
+import { useI18n } from "@/lib/i18n";
 import { useContextMenu } from "@/lib/useContextMenu";
 import { Replace, Search } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -46,11 +47,8 @@ function groupByFile(matches: SearchMatch[]): FileGroup[] {
   return [...groups].map(([file, ms]) => ({ file, matches: ms }));
 }
 
-function plural(n: number, word: string): string {
-  return `${n} ${word}${n === 1 ? "" : "s"}`;
-}
-
 export function SearchPanel({ rootPath, onOpenMatch }: Props) {
+  const { t, tn } = useI18n();
   const [query, setQuery] = useState("");
   const [replaceOpen, setReplaceOpen] = useState(false);
   const [replacement, setReplacement] = useState("");
@@ -67,17 +65,17 @@ export function SearchPanel({ rootPath, onOpenMatch }: Props) {
   const matchCount = state.status === "loaded" ? state.matches.length : 0;
 
   if (!rootPath) {
-    return <div className="search-empty">Open a folder to search</div>;
+    return <div className="search-empty">{t("search.openFolderToSearch")}</div>;
   }
 
   const runReplace = async (files?: string[]) => {
     const scope = files
-      ? `in ${basename(files[0])}`
-      : `across ${plural(groups.length, "file")}`;
+      ? t("search.scopeInFile", { file: basename(files[0]) })
+      : t("search.scopeAcrossFiles", {
+          files: tn(groups.length, "count.fileOne", "count.fileMany"),
+        });
     if (
-      !window.confirm(
-        `Replace every "${query}" with "${replacement}" ${scope}? This cannot be undone.`,
-      )
+      !window.confirm(t("search.confirmReplace", { query, replacement, scope }))
     ) {
       return;
     }
@@ -90,11 +88,18 @@ export function SearchPanel({ rootPath, onOpenMatch }: Props) {
         files,
       );
       setNotice(
-        `Replaced ${plural(r.replacements, "occurrence")} in ${plural(r.filesChanged, "file")}.`,
+        t("search.replaced", {
+          occurrences: tn(
+            r.replacements,
+            "count.occurrenceOne",
+            "count.occurrenceMany",
+          ),
+          files: tn(r.filesChanged, "count.fileOne", "count.fileMany"),
+        }),
       );
       setRefreshToken((t) => t + 1);
     } catch (e) {
-      setNotice(`Replace failed: ${String(e)}`);
+      setNotice(t("search.replaceFailed", { error: String(e) }));
     } finally {
       setBusy(false);
     }
@@ -109,7 +114,7 @@ export function SearchPanel({ rootPath, onOpenMatch }: Props) {
         <input
           type="text"
           className="search-input"
-          placeholder="Search files…"
+          placeholder={t("search.placeholder")}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -123,7 +128,7 @@ export function SearchPanel({ rootPath, onOpenMatch }: Props) {
               ? "search-replace-toggle search-replace-toggle-active"
               : "search-replace-toggle"
           }
-          title="Find and replace across the vault"
+          title={t("search.findReplaceTitle")}
           aria-pressed={replaceOpen}
           onClick={() => setReplaceOpen((v) => !v)}
         >
@@ -135,7 +140,7 @@ export function SearchPanel({ rootPath, onOpenMatch }: Props) {
           <input
             type="text"
             className="search-input"
-            placeholder="Replace with…"
+            placeholder={t("search.replaceWith")}
             value={replacement}
             onChange={(e) => setReplacement(e.target.value)}
             onKeyDown={(e) => {
@@ -148,7 +153,7 @@ export function SearchPanel({ rootPath, onOpenMatch }: Props) {
             disabled={!canReplace}
             onClick={() => void runReplace()}
           >
-            Replace all
+            {t("search.replaceAll")}
             {matchCount > 0 ? ` (${matchCount})` : ""}
           </button>
         </div>
@@ -156,7 +161,7 @@ export function SearchPanel({ rootPath, onOpenMatch }: Props) {
       <div className="search-results">
         {notice && <div className="search-notice">{notice}</div>}
         {state.status === "loading" && (
-          <div className="search-status">Searching…</div>
+          <div className="search-status">{t("search.searching")}</div>
         )}
         {state.status === "error" && (
           <div className="search-status search-status-error">
@@ -164,10 +169,10 @@ export function SearchPanel({ rootPath, onOpenMatch }: Props) {
           </div>
         )}
         {state.status === "idle" && query.trim().length === 0 && !notice && (
-          <div className="search-status">Type to search across files.</div>
+          <div className="search-status">{t("search.typeToSearch")}</div>
         )}
         {state.status === "loaded" && matchCount === 0 && (
-          <div className="search-status">No matches.</div>
+          <div className="search-status">{t("search.noMatches")}</div>
         )}
         {groups.map((group) => (
           <div key={group.file} className="search-file-group">
@@ -196,7 +201,9 @@ export function SearchPanel({ rootPath, onOpenMatch }: Props) {
                 <div className="search-row-text">
                   {highlight(match.text, query)}
                 </div>
-                <div className="search-row-meta">line {match.line}</div>
+                <div className="search-row-meta">
+                  {t("search.line", { n: match.line })}
+                </div>
               </button>
             ))}
           </div>
@@ -211,8 +218,10 @@ export function SearchPanel({ rootPath, onOpenMatch }: Props) {
             extra: [
               {
                 label: replaceOpen
-                  ? `Replace all in ${basename(menu.menu.data.file)}`
-                  : "Replace in this file…",
+                  ? t("search.replaceAllInFile", {
+                      file: basename(menu.menu.data.file),
+                    })
+                  : t("search.replaceInThisFile"),
                 icon: Replace,
                 disabled: replaceOpen && !canReplace,
                 onSelect: () => {

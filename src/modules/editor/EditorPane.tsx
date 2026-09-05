@@ -1,5 +1,9 @@
 import { frontmatterExtension } from "@/modules/frontmatter";
-import { useEditorSettings } from "@/modules/settings/lib/editorSettings";
+import {
+  editorSettingsStore,
+  type ShortcutAction,
+  useEditorSettings,
+} from "@/modules/settings/lib/editorSettings";
 import { StatusBar } from "@/modules/statusbar";
 import { redo, undo } from "@codemirror/commands";
 import { EditorView, keymap } from "@codemirror/view";
@@ -46,9 +50,11 @@ import {
   type MermaidOpenPayload,
   mermaidPreviewExtension,
 } from "./lib/mermaidPreviewExtension";
+import { pathDropExtension } from "./lib/pathDrop";
 import { scrollPersistenceExtension } from "./lib/scrollPositions";
-import { shortcutsExtension } from "./lib/shortcuts";
+import { buildShortcutCommands, shortcutsExtension } from "./lib/shortcuts";
 import { tagCompletionProvider, tagsExtension } from "./lib/tags";
+import { taskCompletionProvider } from "./lib/taskHelpers";
 import { useDocument } from "./lib/useDocument";
 import {
   wikilinkCompletionProvider,
@@ -59,6 +65,11 @@ import { OutlineOverlay } from "./OutlineOverlay";
 
 export type EditorPaneHandle = {
   focus: () => void;
+  /** Run a rebindable editor action (same set as Settings › Shortcuts). */
+  runAction: (action: ShortcutAction) => void;
+  save: () => void;
+  /** Select and scroll to a 1-based line (`:42` in the command palette). */
+  goToLine: (line: number) => void;
   undo: () => void;
   redo: () => void;
 };
@@ -88,6 +99,10 @@ type Props = {
   /** Vault root; pasted/dropped images are saved under `<root>/attachments`.
    * Read via a ref. */
   rootPath?: string | null;
+  /** When set, `:` in Helix normal/select mode opens the app command
+   * palette (Zed-style) with this query instead of the built-in helix
+   * command line. */
+  onOpenCommandPalette?: (query: string) => void;
 };
 
 const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "ico"];
@@ -113,19 +128,23 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       getAllTags,
       onTagClick,
       rootPath,
+      onOpenCommandPalette,
     } = props;
     const { doc, onChange, save, reload } = useDocument({
       path,
       onDirtyChange,
     });
-    // Another surface (vault-wide replace, templates…) rewrote this file:
-    // pick the new content up unless there are unsaved edits.
+    // Another surface (vault-wide replace, templates, a second window…)
+    // rewrote this file: pick the new content up unless there are unsaved
+    // edits, in which case show a conflict banner instead of clobbering
+    // either side silently (issue #29).
+    const [conflict, setConflict] = useState(false);
     useEffect(() => {
       const unlisten = listen<{ path: string; source?: string }>(
         "fs:file-written",
         (e) => {
-          if (e.payload.path === path && e.payload.source !== "editor")
-            reload();
+          if (e.payload.path !== path || e.payload.source === "editor") return;
+          if (!reload()) setConflict(true);
         },
       );
       return () => {
@@ -138,6 +157,30 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     const setHelixModeRef = useRef(setHelixMode);
     setHelixModeRef.current = setHelixMode;
     const [outlineOpen, setOutlineOpen] = useState(false);
+    const helixModeRef = useRef(helixMode);
+    helixModeRef.current = helixMode;
+    const onOpenCommandPaletteRef = useRef(onOpenCommandPalette);
+    onOpenCommandPaletteRef.current = onOpenCommandPalette;
+    // `:` in Helix normal/select mode opens the command palette (Zed-style).
+    // Window capture phase so it wins over codemirror-helix's own handler;
+    // restricted to the content DOM so the `/` search input keeps its `:`.
+    useEffect(() => {
+      const onKeyDown = (e: KeyboardEvent) => {
+        if (e.key !== ":" || e.metaKey || e.ctrlKey || e.altKey) return;
+        if (!onOpenCommandPaletteRef.current) return;
+        if (editorSettingsStore.get().keybindingMode !== "helix") return;
+        if (helixModeRef.current === "insert") return;
+        const view = cmRef.current?.view;
+        if (!view) return;
+        if (!(e.target instanceof Node) || !view.contentDOM.contains(e.target))
+          return;
+        e.preventDefault();
+        e.stopPropagation();
+        onOpenCommandPaletteRef.current(":");
+      };
+      window.addEventListener("keydown", onKeyDown, true);
+      return () => window.removeEventListener("keydown", onKeyDown, true);
+    }, []);
     const [docStats, setDocStats] = useState<DocStats>({
       words: 0,
       readingTimeMin: 0,
@@ -240,6 +283,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         tagsExtension({
           onTagClick: (tag) => onTagClickRef.current?.(tag),
         }),
+        pathDropExtension({ currentPath: path }),
         imageAttachmentsExtension({
           currentPath: path,
           getAttachmentsDir: () =>
@@ -254,6 +298,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           headingCompletionProvider(() => vaultFilesRef.current ?? []),
           // `#tag` completion from the vault-wide tag index.
           tagCompletionProvider(() => getAllTagsRef.current?.() ?? []),
+          taskCompletionProvider(),
           // Plain-text word completion from words already in the document.
           wordCompletionProvider(),
         ]),
@@ -380,6 +425,31 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         focus: () => {
           cmRef.current?.view?.focus();
         },
+        runAction: (action) => {
+          const view = cmRef.current?.view;
+          if (!view) return;
+          const s = editorSettingsStore.get();
+          const commands = buildShortcutCommands(
+            { start: s.foldStartMarker, end: s.foldEndMarker },
+            () => openOutlineRef.current(),
+          );
+          view.focus();
+          commands[action](view);
+        },
+        save: () => {
+          void performSaveRef.current();
+        },
+        goToLine: (line) => {
+          const view = cmRef.current?.view;
+          if (!view) return;
+          const clamped = Math.max(1, Math.min(line, view.state.doc.lines));
+          const pos = view.state.doc.line(clamped).from;
+          view.dispatch({
+            selection: { anchor: pos },
+            effects: EditorView.scrollIntoView(pos, { y: "center" }),
+          });
+          view.focus();
+        },
         undo: () => {
           const view = cmRef.current?.view;
           if (view) undo(view);
@@ -423,6 +493,25 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
 
     return (
       <div className="editor-pane">
+        {conflict && (
+          <div className="editor-conflict" role="alert">
+            <span>
+              This file was modified elsewhere while you have unsaved changes.
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                reload(true);
+                setConflict(false);
+              }}
+            >
+              Reload from disk
+            </button>
+            <button type="button" onClick={() => setConflict(false)}>
+              Keep my version
+            </button>
+          </div>
+        )}
         <div className="editor-canvas">
           <CodeMirror
             ref={cmRef}

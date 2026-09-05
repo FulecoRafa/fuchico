@@ -1,5 +1,6 @@
 import { ContextMenu } from "@/lib/ContextMenu";
 import { fileRowMenuItems } from "@/lib/fileRowMenu";
+import { t, useI18n } from "@/lib/i18n";
 import { useContextMenu } from "@/lib/useContextMenu";
 import {
   CalendarClock,
@@ -47,19 +48,7 @@ function monthWeeks(year: number, month: number): CalendarCell[][] {
   return weeks;
 }
 
-const WEEKDAY_LABELS: { key: string; label: string }[] = [
-  { key: "sun", label: "S" },
-  { key: "mon", label: "M" },
-  { key: "tue", label: "T" },
-  { key: "wed", label: "W" },
-  { key: "thu", label: "T" },
-  { key: "fri", label: "F" },
-  { key: "sat", label: "S" },
-];
-const MONTH_LABEL = new Intl.DateTimeFormat(undefined, {
-  month: "long",
-  year: "numeric",
-});
+const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
 function AgendaRow({
   item,
@@ -112,11 +101,11 @@ function AgendaRow({
           item.checked ? "agenda-row-text agenda-row-done" : "agenda-row-text"
         }
       >
-        {item.text || "(empty)"}
+        {item.text || t("agenda.emptyItem")}
       </span>
       {item.time && <span className="agenda-row-time">{item.time}</span>}
       {item.recurrence && (
-        <span className="agenda-row-recur" title="Recurring task">
+        <span className="agenda-row-recur" title={t("agenda.recurringTask")}>
           🔁 {item.recurrence}
           {item.recurTime ? ` ${item.recurTime}` : ""}
         </span>
@@ -159,6 +148,7 @@ function AgendaSection({
 }
 
 export function AgendaView({ rootPath, onOpenItem }: Props) {
+  const { locale } = useI18n();
   const { state, toggle } = useAgenda(rootPath);
   const [cursor, setCursor] = useState(() => {
     const d = new Date();
@@ -181,6 +171,11 @@ export function AgendaView({ rootPath, onOpenItem }: Props) {
   }, [items]);
 
   const weeks = useMemo(() => monthWeeks(cursor.year, cursor.month), [cursor]);
+  const monthLabel = useMemo(
+    () => new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }),
+    [locale],
+  );
+  const weekdayLetters = t("agenda.weekdayLetters").split(",");
 
   const dateFiltered = selectedDate ? (byDate.get(selectedDate) ?? []) : items;
   const overdue = dateFiltered.filter(
@@ -195,9 +190,7 @@ export function AgendaView({ rootPath, onOpenItem }: Props) {
   const rowMenu = useContextMenu<AgendaItem>();
 
   if (!rootPath) {
-    return (
-      <div className="agenda-empty">Open a folder to see tasks and events</div>
-    );
+    return <div className="agenda-empty">{t("agenda.openFolder")}</div>;
   }
 
   return (
@@ -218,7 +211,7 @@ export function AgendaView({ rootPath, onOpenItem }: Props) {
             <ChevronLeft size={14} strokeWidth={1.75} />
           </button>
           <span className="agenda-calendar-title">
-            {MONTH_LABEL.format(new Date(cursor.year, cursor.month, 1))}
+            {monthLabel.format(new Date(cursor.year, cursor.month, 1))}
           </span>
           <button
             type="button"
@@ -235,9 +228,9 @@ export function AgendaView({ rootPath, onOpenItem }: Props) {
           </button>
         </div>
         <div className="agenda-calendar-grid">
-          {WEEKDAY_LABELS.map(({ key, label }) => (
+          {WEEKDAY_KEYS.map((key, i) => (
             <div key={key} className="agenda-calendar-weekday">
-              {label}
+              {weekdayLetters[i]}
             </div>
           ))}
           {weeks.map((week) =>
@@ -275,15 +268,16 @@ export function AgendaView({ rootPath, onOpenItem }: Props) {
             className="agenda-clear-filter"
             onClick={() => setSelectedDate(null)}
           >
-            Clear filter ({selectedDate})
+            {t("agenda.clearFilter", { date: selectedDate })}
           </button>
         )}
         <div className="agenda-routines">
-          <div className="agenda-section-title">Routines</div>
+          <div className="agenda-section-title">{t("agenda.routines")}</div>
           {routines.length === 0 && (
             <div className="agenda-status">
-              No routines yet. Add <code>🔁 daily|weekdays|weekends|mon,…</code>{" "}
-              to a task.
+              {t("agenda.noRoutinesPrefix")}{" "}
+              <code>🔁 daily|weekdays|weekends|mon,…</code>{" "}
+              {t("agenda.noRoutinesSuffix")}
             </div>
           )}
           {routines.map((item) => (
@@ -306,7 +300,7 @@ export function AgendaView({ rootPath, onOpenItem }: Props) {
 
       <div className="agenda-list">
         {state.status === "loading" && (
-          <div className="agenda-status">Scanning…</div>
+          <div className="agenda-status">{t("common.scanning")}</div>
         )}
         {state.status === "error" && (
           <div className="agenda-status agenda-status-error">
@@ -315,42 +309,45 @@ export function AgendaView({ rootPath, onOpenItem }: Props) {
         )}
         {state.status === "loaded" && items.length === 0 && (
           <div className="agenda-status">
-            No tasks yet. Use <code>- [ ] …</code>, <code>TODO: …</code>, or{" "}
-            <code>📅 YYYY-MM-DD …</code> in your notes.
+            {t("agenda.noTasksPrefix")} <code>- [ ] …</code>,{" "}
+            <code>TODO: …</code>, {t("agenda.or")} <code>📅 YYYY-MM-DD …</code>{" "}
+            {t("agenda.noTasksSuffix")}
           </div>
         )}
         {state.status === "loaded" && items.length > 0 && (
           <>
             <AgendaSection
-              title="Overdue"
+              title={t("agenda.overdue")}
               items={overdue}
               onToggle={toggle}
               onOpen={onOpen}
               onContextMenu={rowMenu.open}
             />
             <AgendaSection
-              title="Today"
+              title={t("agenda.today")}
               items={due}
               onToggle={toggle}
               onOpen={onOpen}
               onContextMenu={rowMenu.open}
             />
             <AgendaSection
-              title="Upcoming"
+              title={t("agenda.upcoming")}
               items={upcoming}
               onToggle={toggle}
               onOpen={onOpen}
               onContextMenu={rowMenu.open}
             />
             <AgendaSection
-              title="No date"
+              title={t("agenda.noDate")}
               items={noDate}
               onToggle={toggle}
               onOpen={onOpen}
               onContextMenu={rowMenu.open}
             />
             {overdue.length + due.length + upcoming.length + noDate.length ===
-              0 && <div className="agenda-status">Nothing here.</div>}
+              0 && (
+              <div className="agenda-status">{t("agenda.nothingHere")}</div>
+            )}
           </>
         )}
       </div>

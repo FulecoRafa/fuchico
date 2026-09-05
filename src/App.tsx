@@ -1,5 +1,11 @@
+import { openEditorWindow } from "@/lib/editorWindow";
+import { t, useLocale } from "@/lib/i18n";
 import { AgendaView } from "@/modules/agenda";
-import { EditorPane, useVaultFiles } from "@/modules/editor";
+import {
+  EditorPane,
+  type EditorPaneHandle,
+  useVaultFiles,
+} from "@/modules/editor";
 import { FileExplorer } from "@/modules/explorer";
 import {
   buildAppCommands,
@@ -9,6 +15,7 @@ import {
 } from "@/modules/palette";
 import { SearchPanel } from "@/modules/search";
 import { SettingsView } from "@/modules/settings";
+import { settingsNav } from "@/modules/settings/lib/settingsNav";
 import { useTheme } from "@/modules/settings/lib/useTheme";
 import { useZoomShortcuts } from "@/modules/settings/lib/useZoomShortcuts";
 import { TabBar, useTabs } from "@/modules/tabs";
@@ -55,6 +62,9 @@ type MermaidDock = { blockKey: string; label: string; initialText?: string };
 function App() {
   useTheme();
   useZoomShortcuts();
+  // Language changes re-render the shell (activity-bar titles, empty states)
+  // and rebuild the palette commands below.
+  const locale = useLocale();
   const [rootPath, setRootPath] = useState<string | null>(null);
   const {
     tabs,
@@ -89,7 +99,9 @@ function App() {
   const [mermaidDock, setMermaidDock] = useState<MermaidDock | null>(null);
   const [quickSwitcherOpen, setQuickSwitcherOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [paletteQuery, setPaletteQuery] = useState("");
   const dockPanelRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<EditorPaneHandle>(null);
   const dockWidthRef = useRef(DEFAULT_DOCK_WIDTH);
   const dockResizeRef = useRef<{
     pointerId: number;
@@ -172,11 +184,16 @@ function App() {
     [openTab],
   );
 
+  const openInWindow = useCallback(
+    (path: string) => void openEditorWindow(path, rootPath),
+    [rootPath],
+  );
+
   const openMermaid = useCallback(
     (payload: { blockKey: string; text: string }) => {
       setMermaidDock({
         blockKey: payload.blockKey,
-        label: "Diagram",
+        label: t("app.diagram"),
         initialText: payload.text,
       });
     },
@@ -201,11 +218,17 @@ function App() {
 
   const activeTab = tabs.find((t) => t.path === activePath) ?? null;
 
+  const openCommandPalette = useCallback((query = "") => {
+    setPaletteQuery(query);
+    setCommandPaletteOpen(true);
+  }, []);
+
   usePaletteShortcuts({
     onOpenQuickSwitcher: () => setQuickSwitcherOpen(true),
-    onOpenCommandPalette: () => setCommandPaletteOpen(true),
+    onOpenCommandPalette: () => openCommandPalette(),
   });
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `locale` re-runs buildAppCommands so command titles re-translate
   const commands = useMemo(
     () =>
       buildAppCommands({
@@ -222,13 +245,14 @@ function App() {
         rootPath,
         vaultFiles,
         openFile: (path) => openFile(path),
-        openShortcuts: () => {
+        runEditorAction: (action) => editorRef.current?.runAction(action),
+        saveActiveFile: () => editorRef.current?.save(),
+        openActiveInNewWindow: () => {
+          if (activePath) openInWindow(activePath);
+        },
+        openSettings: (section) => {
+          settingsNav.set(section);
           setMainView("settings");
-          requestAnimationFrame(() =>
-            document
-              .getElementById("settings-shortcuts")
-              ?.scrollIntoView({ block: "start" }),
-          );
         },
       }),
     [
@@ -240,6 +264,8 @@ function App() {
       tabs.length,
       vaultFiles,
       openFile,
+      openInWindow,
+      locale,
     ],
   );
 
@@ -257,7 +283,7 @@ function App() {
               ? "app-activitybar-btn app-activitybar-btn-active"
               : "app-activitybar-btn"
           }
-          title="Files"
+          title={t("app.files")}
           onClick={() => setMainView("editor")}
         >
           <Files size={17} strokeWidth={1.75} />
@@ -269,7 +295,7 @@ function App() {
               ? "app-activitybar-btn app-activitybar-btn-active"
               : "app-activitybar-btn"
           }
-          title="Tasks & Calendar"
+          title={t("app.tasksCalendar")}
           onClick={() => setMainView("agenda")}
         >
           <CalendarClock size={17} strokeWidth={1.75} />
@@ -281,7 +307,7 @@ function App() {
               ? "app-activitybar-btn app-activitybar-btn-active"
               : "app-activitybar-btn"
           }
-          title="Search"
+          title={t("app.search")}
           onClick={() => setMainView("search")}
         >
           <Search size={17} strokeWidth={1.75} />
@@ -293,7 +319,7 @@ function App() {
               ? "app-activitybar-btn app-activitybar-btn-active"
               : "app-activitybar-btn"
           }
-          title="Tags"
+          title={t("app.tags")}
           onClick={() => setMainView("tags")}
         >
           <Hash size={17} strokeWidth={1.75} />
@@ -305,7 +331,7 @@ function App() {
               ? "app-activitybar-btn app-activitybar-btn-active"
               : "app-activitybar-btn"
           }
-          title="Settings"
+          title={t("app.settings")}
           onClick={() => setMainView("settings")}
         >
           <Settings size={17} strokeWidth={1.75} />
@@ -318,6 +344,7 @@ function App() {
               rootPath={rootPath}
               activeFilePath={activePath}
               onOpenFile={(path) => openFile(path)}
+              onOpenInWindow={openInWindow}
               onOpenFolder={() => void handleOpenFolder()}
               onPathRenamed={handlePathRenamed}
               onPathDeleted={handlePathDeleted}
@@ -330,7 +357,7 @@ function App() {
                 onClick={() => void handleOpenFolder()}
               >
                 <FolderOpen size={14} strokeWidth={1.75} />
-                Open Folder
+                {t("common.openFolder")}
               </button>
             </div>
           )}
@@ -360,12 +387,17 @@ function App() {
                     onClose={closeTab}
                     onCloseOthers={closeOthers}
                     onCloseAll={closeAll}
+                    onOpenInWindow={openInWindow}
                   />
                 )}
                 {activeTab ? (
                   activeTab.path.toLowerCase().endsWith(".excalidraw") ? (
                     <Suspense
-                      fallback={<div className="editor-status">Loading…</div>}
+                      fallback={
+                        <div className="editor-status">
+                          {t("common.loading")}
+                        </div>
+                      }
                     >
                       <ExcalidrawPane
                         key={activeTab.path}
@@ -377,6 +409,8 @@ function App() {
                     </Suspense>
                   ) : (
                     <EditorPane
+                      ref={editorRef}
+                      onOpenCommandPalette={openCommandPalette}
                       key={activeTab.path}
                       path={activeTab.path}
                       focusLine={activeTab.focusLine}
@@ -392,7 +426,7 @@ function App() {
                     />
                   )
                 ) : (
-                  <div className="editor-status">No file open</div>
+                  <div className="editor-status">{t("app.noFileOpen")}</div>
                 )}
               </div>
             )}
@@ -411,7 +445,9 @@ function App() {
                 style={{ width: dockWidthRef.current }}
               >
                 <Suspense
-                  fallback={<div className="editor-status">Loading…</div>}
+                  fallback={
+                    <div className="editor-status">{t("common.loading")}</div>
+                  }
                 >
                   <MermaidPane
                     key={mermaidDock.blockKey}
@@ -436,6 +472,8 @@ function App() {
       {commandPaletteOpen && (
         <CommandPalette
           commands={commands}
+          initialQuery={paletteQuery}
+          onGoToLine={(line) => editorRef.current?.goToLine(line)}
           onClose={() => setCommandPaletteOpen(false)}
         />
       )}
