@@ -1923,6 +1923,24 @@ input {
   white-space: nowrap;
 }
 
+.palette-overlay-keys {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-family: inherit;
+  font-size: 10.5px;
+  color: var(--muted-foreground);
+  background: color-mix(in oklch, var(--muted-foreground) 12%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+.palette-overlay-item-active .palette-overlay-keys {
+  color: inherit;
+  border-color: color-mix(in oklch, currentColor 30%, transparent);
+}
+
 .palette-overlay-highlight {
   background: color-mix(in oklch, var(--syntax-number) 35%, transparent);
   color: inherit;

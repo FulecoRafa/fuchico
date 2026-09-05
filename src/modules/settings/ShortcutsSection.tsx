@@ -2,108 +2,8 @@ import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { ShortcutAction } from "./lib/editorSettings";
 import { useEditorSettings } from "./lib/editorSettings";
+import { FIXED_SHORTCUTS as FIXED, formatBinding } from "./lib/fixedShortcuts";
 import { SHORTCUT_ACTIONS as ACTIONS } from "./lib/shortcutActions";
-
-/** Shortcuts that are built in (not rebindable), listed so the whole map is
- * discoverable in one searchable place (issue #7). */
-const FIXED: { group: string; label: string; desc: string; keys: string }[] = [
-  {
-    group: "Global",
-    label: "Command palette",
-    desc: "Run any app command by name.",
-    keys: "Mod-Shift-p",
-  },
-  {
-    group: "Global",
-    label: "Quick open file",
-    desc: "Fuzzy-find a note in the vault.",
-    keys: "Mod-p",
-  },
-  {
-    group: "Global",
-    label: "Editor font size",
-    desc: "Bigger / smaller / reset editor text.",
-    keys: "Mod-= / Mod-- / Mod-0",
-  },
-  {
-    group: "Global",
-    label: "UI zoom",
-    desc: "Zoom the whole app in / out / reset.",
-    keys: "Mod-Shift-= / Mod-Shift-- / Mod-Shift-0",
-  },
-  {
-    group: "Editor",
-    label: "Save",
-    desc: "Write the current file to disk.",
-    keys: "Mod-s",
-  },
-  {
-    group: "Editor",
-    label: "Find / replace",
-    desc: "Search within the current file.",
-    keys: "Mod-f",
-  },
-  {
-    group: "Editor",
-    label: "Task date / repeat autocomplete",
-    desc: "Type @due, @today, @repeat (or 📅 / 🔁) on a task line to pick a date or rule.",
-    keys: "@",
-  },
-  {
-    group: "Editor",
-    label: "Paste image",
-    desc: "Paste or drop an image to save it under attachments/ and link it.",
-    keys: "Mod-v",
-  },
-  {
-    group: "Editor",
-    label: "Follow link",
-    desc: "Open the [[wikilink]] or Markdown link under the cursor.",
-    keys: "Click",
-  },
-  {
-    group: "File explorer",
-    label: "Navigate",
-    desc: "Move selection, expand/collapse folders.",
-    keys: "↑ ↓ ← →",
-  },
-  {
-    group: "File explorer",
-    label: "Open / toggle folder",
-    desc: "Open the selected file or expand/collapse the folder.",
-    keys: "Enter",
-  },
-  {
-    group: "File explorer",
-    label: "Rename",
-    desc: "Rename the selected entry.",
-    keys: "F2",
-  },
-  {
-    group: "File explorer",
-    label: "Delete",
-    desc: "Delete the selected entry (asks for confirmation).",
-    keys: "Delete / Backspace",
-  },
-  {
-    group: "File explorer",
-    label: "Type-ahead",
-    desc: "Type a name prefix to jump to the matching entry.",
-    keys: "a–z",
-  },
-  {
-    group: "File explorer",
-    label: "Context menu",
-    desc: "New file/folder, rename, delete.",
-    keys: "Right-click",
-  },
-  {
-    group: "Tabs",
-    label: "Tab menu",
-    desc: "Close, close others, close all.",
-    keys: "Right-click",
-  },
-];
 
 const MODIFIER_KEYS = new Set(["Control", "Meta", "Alt", "Shift"]);
 
@@ -136,12 +36,22 @@ export function ShortcutsSection() {
   const rebindable = useMemo(
     () =>
       ACTIONS.filter((a) =>
-        matches(query, "editor", a.label, a.desc, settings.shortcuts[a.value]),
+        matches(
+          query,
+          "editor",
+          a.label,
+          a.desc,
+          settings.shortcuts[a.value],
+          formatBinding(settings.shortcuts[a.value]),
+        ),
       ),
     [query, settings.shortcuts],
   );
   const fixed = useMemo(
-    () => FIXED.filter((f) => matches(query, f.group, f.label, f.desc, f.keys)),
+    () =>
+      FIXED.filter((f) =>
+        matches(query, f.group, f.label, f.desc, f.keys, formatBinding(f.keys)),
+      ),
     [query],
   );
   const groups = useMemo(() => {
@@ -201,7 +111,7 @@ export function ShortcutsSection() {
             >
               {recording === a.value
                 ? "Press keys…"
-                : settings.shortcuts[a.value]}
+                : formatBinding(settings.shortcuts[a.value])}
             </button>
           </div>
         ))}
@@ -215,7 +125,7 @@ export function ShortcutsSection() {
                   <span className="settings-hint">{f.desc}</span>
                 </div>
                 <span className="settings-shortcut-key settings-shortcut-key-fixed">
-                  {f.keys}
+                  {formatBinding(f.keys)}
                 </span>
               </div>
             ))}

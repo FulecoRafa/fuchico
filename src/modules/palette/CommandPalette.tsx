@@ -1,4 +1,5 @@
 import { fuzzyMatch } from "@/modules/editor/lib/fuzzyMatch";
+import { formatBinding } from "@/modules/settings/lib/fixedShortcuts";
 import { Command as CommandIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AppCommand } from "./lib/commands";
@@ -32,7 +33,13 @@ export function CommandPalette({ commands, onClose }: Props) {
         });
         continue;
       }
-      const keywordMatch = (command.keywords ?? []).find(
+      const extras = command.binding
+        ? [
+            command.binding.replace(/-/g, " "),
+            formatBinding(command.binding),
+          ]
+        : [];
+      const keywordMatch = [...(command.keywords ?? []), ...extras].find(
         (kw) => fuzzyMatch(q, kw).matched,
       );
       if (keywordMatch) {
@@ -108,6 +115,11 @@ export function CommandPalette({ commands, onClose }: Props) {
                 text={r.command.title}
                 indices={r.indices}
               />
+              {r.command.binding && (
+                <kbd className="palette-overlay-keys">
+                  {formatBinding(r.command.binding)}
+                </kbd>
+              )}
             </button>
           ))}
         </div>

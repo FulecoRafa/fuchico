@@ -20,6 +20,9 @@ export type AppCommand = {
   /** Extra terms matched (but not highlighted) so e.g. "dark mode" finds
    * "Toggle Theme". */
   keywords?: string[];
+  /** Key binding hint shown right-aligned in the palette row (raw
+   * "Mod-Shift-p" form; formatted per platform at render time). */
+  binding?: string;
   run: () => void;
 };
 
@@ -95,6 +98,7 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
           id: `editor:${a.value}`,
           title: `Editor: ${a.label}`,
           keywords: ["task", "insert", "editor", a.desc],
+          binding: editorSettingsStore.get().shortcuts[a.value],
           run: () => ctx.runEditorAction(a.value),
         }))
       : []),
@@ -117,6 +121,7 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
       id: "quick-open-file",
       title: "Quick Open: Go to File…",
       keywords: ["switcher", "find file", "open file"],
+      binding: "Mod-p",
       run: () => ctx.openQuickSwitcher(),
     });
   }
