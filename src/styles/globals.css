@@ -2205,3 +2205,135 @@ input {
 .cm-editor .cm-panel.cm-search [name="close"]:hover {
   color: var(--foreground);
 }
+
+/* --- Searchable shortcuts list (issue #7) --- */
+.settings-shortcut-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--muted-foreground);
+}
+.settings-shortcut-search .settings-input {
+  flex: 1;
+  max-width: 320px;
+}
+.settings-shortcut-group {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  margin: 0.75rem 0 0.25rem;
+}
+.settings-shortcut-groupwrap {
+  display: contents;
+}
+.settings-shortcut-key-fixed {
+  cursor: default;
+  opacity: 0.85;
+}
+.settings-shortcut-key-fixed:hover {
+  background: inherit;
+}
+
+/* Search: vault-wide replace (issue #25) + grouped results */
+.search-replace-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.search-replace-toggle:hover,
+.search-replace-toggle-active {
+  background: color-mix(in oklch, var(--foreground) 8%, transparent);
+  color: var(--foreground);
+}
+
+.search-replace-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 6px 16px 6px 38px;
+  border-bottom: 1px solid var(--border);
+}
+
+.search-replace-btn {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--foreground) 5%, transparent);
+  color: var(--foreground);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.search-replace-btn:hover:not(:disabled) {
+  background: color-mix(in oklch, var(--foreground) 12%, transparent);
+}
+
+.search-replace-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.search-notice {
+  margin: 4px 4px 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--syntax-function) 18%, transparent);
+  font-size: 12px;
+  color: var(--foreground);
+}
+
+.search-file-group {
+  margin-bottom: 6px;
+}
+
+.search-file-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.search-file-header:hover {
+  background: color-mix(in oklch, var(--foreground) 5%, transparent);
+}
+
+.search-file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-file-count {
+  margin-left: auto;
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+.search-file-group .search-row {
+  padding-left: 16px;
+}

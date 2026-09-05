@@ -1,3 +1,6 @@
+import { ContextMenu } from "@/lib/ContextMenu";
+import { fileRowMenuItems } from "@/lib/fileRowMenu";
+import { useContextMenu } from "@/lib/useContextMenu";
 import {
   CalendarClock,
   ChevronLeft,
@@ -62,10 +65,12 @@ function AgendaRow({
   item,
   onToggle,
   onOpen,
+  onContextMenu,
 }: {
   item: AgendaItem;
   onToggle: (item: AgendaItem) => void;
   onOpen: (item: AgendaItem) => void;
+  onContextMenu: (e: React.MouseEvent, item: AgendaItem) => void;
 }) {
   return (
     // A checkbox <input> is interactive content, so this row can't be a
@@ -77,6 +82,7 @@ function AgendaRow({
       role="button"
       tabIndex={0}
       onClick={() => onOpen(item)}
+      onContextMenu={(e) => onContextMenu(e, item)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -127,11 +133,13 @@ function AgendaSection({
   items,
   onToggle,
   onOpen,
+  onContextMenu,
 }: {
   title: string;
   items: AgendaItem[];
   onToggle: (item: AgendaItem) => void;
   onOpen: (item: AgendaItem) => void;
+  onContextMenu: (e: React.MouseEvent, item: AgendaItem) => void;
 }) {
   if (items.length === 0) return null;
   return (
@@ -143,6 +151,7 @@ function AgendaSection({
           item={item}
           onToggle={onToggle}
           onOpen={onOpen}
+          onContextMenu={onContextMenu}
         />
       ))}
     </div>
@@ -183,6 +192,7 @@ export function AgendaView({ rootPath, onOpenItem }: Props) {
   const routines = items.filter((i) => i.recurrence);
 
   const onOpen = (item: AgendaItem) => onOpenItem(item.file, item.line);
+  const rowMenu = useContextMenu<AgendaItem>();
 
   if (!rootPath) {
     return (
@@ -282,6 +292,7 @@ export function AgendaView({ rootPath, onOpenItem }: Props) {
               key={`${item.file}:${item.line}`}
               className="agenda-routine-row"
               onClick={() => onOpen(item)}
+              onContextMenu={(e) => rowMenu.open(e, item)}
             >
               <span className="agenda-routine-text">{item.text}</span>
               <span className="agenda-routine-rule">
@@ -315,30 +326,44 @@ export function AgendaView({ rootPath, onOpenItem }: Props) {
               items={overdue}
               onToggle={toggle}
               onOpen={onOpen}
+              onContextMenu={rowMenu.open}
             />
             <AgendaSection
               title="Today"
               items={due}
               onToggle={toggle}
               onOpen={onOpen}
+              onContextMenu={rowMenu.open}
             />
             <AgendaSection
               title="Upcoming"
               items={upcoming}
               onToggle={toggle}
               onOpen={onOpen}
+              onContextMenu={rowMenu.open}
             />
             <AgendaSection
               title="No date"
               items={noDate}
               onToggle={toggle}
               onOpen={onOpen}
+              onContextMenu={rowMenu.open}
             />
             {overdue.length + due.length + upcoming.length + noDate.length ===
               0 && <div className="agenda-status">Nothing here.</div>}
           </>
         )}
       </div>
+      {rowMenu.menu && (
+        <ContextMenu
+          x={rowMenu.menu.x}
+          y={rowMenu.menu.y}
+          items={fileRowMenuItems(rowMenu.menu.data.file, {
+            onOpen: () => onOpen(rowMenu.menu?.data as AgendaItem),
+          })}
+          onClose={rowMenu.close}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,13 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+export const FS_CHANGED_EVENT = "helix:fs-changed";
+
+/** Tells mounted file trees that `dir`'s contents changed on disk. */
+export function notifyFsChanged(dir: string): void {
+  window.dispatchEvent(new CustomEvent(FS_CHANGED_EVENT, { detail: dir }));
+}
+
 export type DirEntry = {
   name: string;
   kind: "file" | "dir" | "symlink";
@@ -122,6 +129,18 @@ export function useFileTree(rootPath: string | null, options?: Options) {
     },
     [fetchChildren],
   );
+
+  // Other parts of the app (daily notes, templates, attachments) create
+  // files outside the explorer; they announce the touched directory so the
+  // tree can refetch it. See `notifyFsChanged`.
+  useEffect(() => {
+    const onChanged = (e: Event) => {
+      const dir = (e as CustomEvent<string>).detail;
+      if (typeof dir === "string") void fetchChildren(dir);
+    };
+    window.addEventListener(FS_CHANGED_EVENT, onChanged);
+    return () => window.removeEventListener(FS_CHANGED_EVENT, onChanged);
+  }, [fetchChildren]);
 
   const beginCreate = useCallback(
     (

@@ -1,8 +1,8 @@
 import { fuzzyMatch } from "@/modules/editor/lib/fuzzyMatch";
 import { Command as CommandIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { HighlightedText } from "./lib/HighlightedText";
 import type { AppCommand } from "./lib/commands";
+import { HighlightedText } from "./lib/HighlightedText";
 
 type Props = {
   commands: AppCommand[];

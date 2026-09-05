@@ -10,6 +10,7 @@ import { useCalDavLinks } from "./lib/useCalDavLinks";
 import { useCalDavSync } from "./lib/useCalDavSync";
 import { ShortcutsSection } from "./ShortcutsSection";
 import { ThemeSection } from "./ThemeSection";
+import { VaultSection } from "./VaultSection";
 
 type Props = {
   rootPath: string | null;
@@ -37,6 +38,8 @@ export function SettingsView({ rootPath }: Props) {
       <ShortcutsSection />
 
       <FoldingSection />
+
+      <VaultSection />
 
       <div className="settings-section">
         <div className="settings-section-title">CalDAV Sync</div>

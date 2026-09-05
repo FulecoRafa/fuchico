@@ -1,11 +1,20 @@
 import { ContextMenu, type ContextMenuItem } from "@/lib/ContextMenu";
+import {
+  copyPathToClipboard,
+  openWithExternalTool,
+  revealInFileManager,
+} from "@/lib/fileActions";
+import { useEditorSettings } from "@/modules/settings/lib/editorSettings";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
+  Copy,
+  ExternalLink,
+  Eye,
   FilePlus,
   FolderOpen,
   FolderPlus,
-  PenTool,
   Pencil,
+  PenTool,
   RefreshCw,
   Trash2,
 } from "lucide-react";
@@ -59,6 +68,7 @@ type Row =
 
 const ROW_HEIGHT = 24;
 const OVERSCAN = 8;
+const TYPE_AHEAD_RESET_MS = 700;
 
 function basename(path: string): string {
   const parts = path.split(/[\\/]/).filter(Boolean);
@@ -154,10 +164,17 @@ export function FileExplorer({
   const tree = useFileTree(rootPath, treeOptions);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [menu, setMenu] = useState<MenuState>(null);
+  const externalTool = useEditorSettings().settings.externalTool;
   const [dragPath, setDragPath] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Type-ahead: printable keys typed in quick succession build a prefix that
+  // jumps to the next entry whose name starts with it (issue #8).
+  const typeAheadRef = useRef<{ buffer: string; at: number }>({
+    buffer: "",
+    at: 0,
+  });
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: `tree` changes identity every render; only these fields matter.
   const { rows, entryIndexByPath } = useMemo(() => {
@@ -313,6 +330,24 @@ export function FileExplorer({
         },
         { kind: "separator" },
         {
+          label: "Reveal in file manager",
+          icon: Eye,
+          onSelect: () => void revealInFileManager(menu.path),
+        },
+        {
+          label: externalTool.trim()
+            ? `Open with ${externalTool.trim()}`
+            : "Open with default app",
+          icon: ExternalLink,
+          onSelect: () => void openWithExternalTool(menu.path, externalTool),
+        },
+        {
+          label: "Copy path",
+          icon: Copy,
+          onSelect: () => void copyPathToClipboard(menu.path),
+        },
+        { kind: "separator" },
+        {
           label: "Delete",
           icon: Trash2,
           danger: true,
@@ -402,6 +437,32 @@ export function FileExplorer({
         if (currentIdx < 0) return;
         e.preventDefault();
         tree.beginRename(entryPaths[currentIdx]);
+        break;
+      }
+      default: {
+        if (e.key.length !== 1 || e.metaKey || e.ctrlKey || e.altKey) return;
+        e.preventDefault();
+        const now = Date.now();
+        const ta = typeAheadRef.current;
+        const buffer =
+          now - ta.at < TYPE_AHEAD_RESET_MS
+            ? ta.buffer + e.key.toLowerCase()
+            : e.key.toLowerCase();
+        typeAheadRef.current = { buffer, at: now };
+        // Repeating the same letter cycles through entries starting with it.
+        const cycling =
+          buffer.length > 1 && buffer === buffer[0].repeat(buffer.length);
+        const prefix = cycling ? buffer[0] : buffer;
+        const start =
+          cycling || buffer.length === 1 ? currentIdx + 1 : currentIdx;
+        const n = entryPaths.length;
+        for (let step = 0; step < n; step++) {
+          const idx = (Math.max(0, start) + step) % n;
+          if (basename(entryPaths[idx]).toLowerCase().startsWith(prefix)) {
+            move(idx);
+            break;
+          }
+        }
         break;
       }
     }

@@ -1,3 +1,6 @@
+import { ContextMenu } from "@/lib/ContextMenu";
+import { fileRowMenuItems } from "@/lib/fileRowMenu";
+import { useContextMenu } from "@/lib/useContextMenu";
 import { Hash } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { type TagEntry, useTagIndex } from "./lib/useTagIndex";
@@ -47,6 +50,7 @@ export function TagsView({
 }: Props) {
   const { state } = useTagIndex(rootPath);
   const [active, setActive] = useState<string | null>(null);
+  const fileMenu = useContextMenu<string>();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: selectedTagToken is the re-trigger signal even when selectedTag repeats
   useEffect(() => {
@@ -97,6 +101,7 @@ export function TagsView({
             key={file}
             className="tags-file-row"
             onClick={() => onOpenFile(file)}
+            onContextMenu={(e) => fileMenu.open(e, file)}
           >
             <span className="tags-file-name">{basename(file)}</span>
             <span className="tags-file-path" title={file}>
@@ -105,6 +110,14 @@ export function TagsView({
           </button>
         ))}
       </div>
+      {fileMenu.menu && (
+        <ContextMenu
+          x={fileMenu.menu.x}
+          y={fileMenu.menu.y}
+          items={fileRowMenuItems(fileMenu.menu.data, { onOpen: onOpenFile })}
+          onClose={fileMenu.close}
+        />
+      )}
     </div>
   );
 }

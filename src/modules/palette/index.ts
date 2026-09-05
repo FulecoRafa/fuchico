@@ -1,9 +1,9 @@
 export { CommandPalette } from "./CommandPalette";
-export { QuickSwitcher } from "./QuickSwitcher";
 export {
   type AppCommand,
+  buildAppCommands,
   type CommandContext,
   type MainView,
-  buildAppCommands,
 } from "./lib/commands";
 export { usePaletteShortcuts } from "./lib/usePaletteShortcuts";
+export { QuickSwitcher } from "./QuickSwitcher";
