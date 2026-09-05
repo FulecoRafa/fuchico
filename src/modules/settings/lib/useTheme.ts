@@ -51,6 +51,22 @@ export function useTheme() {
     }
   }, [settings.uiFont]);
 
+  // UI zoom scales the whole document; the editor font size is divided back
+  // out so the two axes stay independent (issue #5). `zoom` is supported by
+  // both WebViews Tauri ships (WebKit and WebView2).
+  useEffect(() => {
+    const root = document.documentElement;
+    if (settings.uiScale !== 1) {
+      root.style.setProperty("zoom", String(settings.uiScale));
+    } else {
+      root.style.removeProperty("zoom");
+    }
+    root.style.setProperty(
+      "--editor-font-size",
+      `${settings.editorFontSize / settings.uiScale}px`,
+    );
+  }, [settings.uiScale, settings.editorFontSize]);
+
   useEffect(() => {
     if (settings.editorFont.trim()) {
       document.documentElement.style.setProperty(

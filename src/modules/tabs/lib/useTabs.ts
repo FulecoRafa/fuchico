@@ -53,6 +53,50 @@ export function useTabs() {
     setActivePath(null);
   }, []);
 
+  const closeOthers = useCallback((path: string) => {
+    setTabs((prev) => {
+      const kept = prev.filter((t) => t.path === path);
+      if (kept.length === prev.length) return prev;
+      setActivePath((current) =>
+        kept.some((t) => t.path === current)
+          ? current
+          : (kept[0]?.path ?? null),
+      );
+      return kept;
+    });
+  }, []);
+
+  /** A file or folder was renamed/moved on disk: rewrite the paths of any tabs
+   * under it so they keep pointing at a live file. */
+  const handlePathRenamed = useCallback((from: string, to: string) => {
+    const remap = (path: string) => {
+      if (path === from) return to;
+      if (path.startsWith(`${from}/`)) return to + path.slice(from.length);
+      return path;
+    };
+    setTabs((prev) => {
+      if (!prev.some((t) => t.path !== remap(t.path))) return prev;
+      return prev.map((t) => ({ ...t, path: remap(t.path) }));
+    });
+    setActivePath((current) => (current ? remap(current) : current));
+  }, []);
+
+  /** A file or folder was deleted on disk: close any tabs under it. */
+  const handlePathDeleted = useCallback((path: string) => {
+    const gone = (p: string) => p === path || p.startsWith(`${path}/`);
+    setTabs((prev) => {
+      const idx = prev.findIndex((t) => gone(t.path));
+      if (idx === -1) return prev;
+      const next = prev.filter((t) => !gone(t.path));
+      setActivePath((current) => {
+        if (current === null || !gone(current)) return current;
+        if (next.length === 0) return null;
+        return next[Math.min(idx, next.length - 1)].path;
+      });
+      return next;
+    });
+  }, []);
+
   return {
     tabs,
     activePath,
@@ -61,5 +105,8 @@ export function useTabs() {
     closeTab,
     setDirty,
     closeAll,
+    closeOthers,
+    handlePathRenamed,
+    handlePathDeleted,
   };
 }

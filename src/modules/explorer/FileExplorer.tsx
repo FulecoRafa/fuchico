@@ -1,13 +1,16 @@
+import { ContextMenu, type ContextMenuItem } from "@/lib/ContextMenu";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   FilePlus,
   FolderOpen,
   FolderPlus,
   PenTool,
+  Pencil,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useFileTree } from "./lib/useFileTree";
+import { dirname, useFileTree } from "./lib/useFileTree";
 import { EntryRow, PendingRow, type RowActions, StatusRow } from "./TreeRow";
 
 type Props = {
@@ -15,7 +18,11 @@ type Props = {
   activeFilePath?: string | null;
   onOpenFile: (path: string) => void;
   onOpenFolder: () => void;
+  onPathRenamed?: (from: string, to: string) => void;
+  onPathDeleted?: (path: string) => void;
 };
+
+type MenuState = { x: number; y: number; path: string; isDir: boolean } | null;
 
 type Row =
   | {
@@ -137,9 +144,18 @@ export function FileExplorer({
   activeFilePath,
   onOpenFile,
   onOpenFolder,
+  onPathRenamed,
+  onPathDeleted,
 }: Props) {
-  const tree = useFileTree(rootPath);
+  const treeOptions = useMemo(
+    () => ({ onPathRenamed, onPathDeleted }),
+    [onPathRenamed, onPathDeleted],
+  );
+  const tree = useFileTree(rootPath, treeOptions);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [menu, setMenu] = useState<MenuState>(null);
+  const [dragPath, setDragPath] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -204,9 +220,110 @@ export function FileExplorer({
     [entryIndexByPath, virtualizer],
   );
 
+  const openContextMenu = useCallback(
+    (path: string, e: React.MouseEvent) => {
+      const idx = entryIndexByPath.get(path);
+      const row = idx !== undefined ? rows[idx] : undefined;
+      const isDir = row?.kind === "entry" ? row.isDir : false;
+      setMenu({ x: e.clientX, y: e.clientY, path, isDir });
+    },
+    [entryIndexByPath, rows],
+  );
+
+  // Where a drag over this row would land: directories receive the drop
+  // themselves, files stand in for their parent directory.
+  const dropDirFor = useCallback(
+    (path: string, isDir: boolean) => (isDir ? path : dirname(path)),
+    [],
+  );
+
+  const canDropInto = useCallback(
+    (toDir: string) => {
+      if (!dragPath) return false;
+      if (toDir === dirname(dragPath)) return false;
+      if (`${toDir}/`.startsWith(`${dragPath}/`)) return false;
+      return true;
+    },
+    [dragPath],
+  );
+
+  const handleDragOverPath = useCallback(
+    (path: string, isDir: boolean, e: React.DragEvent) => {
+      const toDir = dropDirFor(path, isDir);
+      if (!canDropInto(toDir)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      setDropTarget(toDir);
+    },
+    [dropDirFor, canDropInto],
+  );
+
+  const handleDropPath = useCallback(
+    (path: string, isDir: boolean, e: React.DragEvent) => {
+      const toDir = dropDirFor(path, isDir);
+      if (!canDropInto(toDir)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (dragPath) void tree.movePath(dragPath, toDir);
+      setDragPath(null);
+      setDropTarget(null);
+    },
+    [dropDirFor, canDropInto, dragPath, tree.movePath],
+  );
+
+  const handleDragEnd = useCallback(() => {
+    setDragPath(null);
+    setDropTarget(null);
+  }, []);
+
   if (!rootPath) {
     return <div className="explorer-empty">No folder open</div>;
   }
+
+  const menuItems: ContextMenuItem[] = menu
+    ? [
+        ...(menu.isDir
+          ? ([
+              {
+                label: "New file",
+                icon: FilePlus,
+                onSelect: () => tree.beginCreate(menu.path, "file"),
+              },
+              {
+                label: "New folder",
+                icon: FolderPlus,
+                onSelect: () => tree.beginCreate(menu.path, "dir"),
+              },
+              {
+                label: "New drawing",
+                icon: PenTool,
+                onSelect: () =>
+                  tree.beginCreate(menu.path, "file", {
+                    defaultExt: "excalidraw",
+                    placeholder: "New drawing",
+                  }),
+              },
+              { kind: "separator" },
+            ] satisfies ContextMenuItem[])
+          : []),
+        {
+          label: "Rename",
+          icon: Pencil,
+          onSelect: () => tree.beginRename(menu.path),
+        },
+        { kind: "separator" },
+        {
+          label: "Delete",
+          icon: Trash2,
+          danger: true,
+          onSelect: () => {
+            if (window.confirm(`Delete "${basename(menu.path)}"?`)) {
+              void tree.deletePath(menu.path);
+            }
+          },
+        },
+      ]
+    : [];
 
   const root = tree.nodes[rootPath];
   const pendingAtRoot =
@@ -281,6 +398,12 @@ export function FileExplorer({
         }
         break;
       }
+      case "F2": {
+        if (currentIdx < 0) return;
+        e.preventDefault();
+        tree.beginRename(entryPaths[currentIdx]);
+        break;
+      }
     }
   };
 
@@ -299,8 +422,14 @@ export function FileExplorer({
             renameInProgress={renameInProgress}
             isSelected={selectedPath === row.path}
             isRenaming={row.kind === "rename"}
+            isDropTarget={dropTarget === row.path && row.isDir}
             onOpenFile={onOpenFile}
             onSelectPath={setSelectedPath}
+            onContextMenu={openContextMenu}
+            onDragStartPath={setDragPath}
+            onDragOverPath={handleDragOverPath}
+            onDropPath={handleDropPath}
+            onDragEnd={handleDragEnd}
           />
         );
       case "pending":
@@ -379,7 +508,28 @@ export function FileExplorer({
         </button>
       </div>
 
-      <div ref={scrollRef} className="explorer-scroll">
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: drag-and-drop fallback target only; keyboard equivalents live on the tree rows */}
+      <div
+        ref={scrollRef}
+        className="explorer-scroll"
+        onDragOver={(e) => {
+          // Fallback target: empty space below the tree moves into the root.
+          if (!canDropInto(rootPath)) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          setDropTarget(rootPath);
+        }}
+        onDrop={(e) => {
+          if (!canDropInto(rootPath)) return;
+          e.preventDefault();
+          if (dragPath) void tree.movePath(dragPath, rootPath);
+          setDragPath(null);
+          setDropTarget(null);
+        }}
+        onDragLeave={(e) => {
+          if (e.currentTarget === e.target) setDropTarget(null);
+        }}
+      >
         {pendingAtRoot ? (
           <PendingRow
             depth={0}
@@ -427,6 +577,15 @@ export function FileExplorer({
           </div>
         ) : null}
       </div>
+
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          items={menuItems}
+          onClose={() => setMenu(null)}
+        />
+      )}
     </div>
   );
 }

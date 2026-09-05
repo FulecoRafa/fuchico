@@ -10,6 +10,7 @@ import {
 import { SearchPanel } from "@/modules/search";
 import { SettingsView } from "@/modules/settings";
 import { useTheme } from "@/modules/settings/lib/useTheme";
+import { useZoomShortcuts } from "@/modules/settings/lib/useZoomShortcuts";
 import { TabBar, useTabs } from "@/modules/tabs";
 import { TagsView, useTagIndex } from "@/modules/tags";
 import { invoke } from "@tauri-apps/api/core";
@@ -53,6 +54,7 @@ type MermaidDock = { blockKey: string; label: string; initialText?: string };
 
 function App() {
   useTheme();
+  useZoomShortcuts();
   const [rootPath, setRootPath] = useState<string | null>(null);
   const {
     tabs,
@@ -62,6 +64,9 @@ function App() {
     closeTab,
     setDirty,
     closeAll,
+    closeOthers,
+    handlePathRenamed,
+    handlePathDeleted,
   } = useTabs();
   const [restoring, setRestoring] = useState(true);
   const vaultFiles = useVaultFiles(rootPath);
@@ -294,6 +299,8 @@ function App() {
               activeFilePath={activePath}
               onOpenFile={(path) => openFile(path)}
               onOpenFolder={() => void handleOpenFolder()}
+              onPathRenamed={handlePathRenamed}
+              onPathDeleted={handlePathDeleted}
             />
           ) : (
             <div className="app-sidebar-empty">
@@ -331,6 +338,8 @@ function App() {
                     activePath={activePath}
                     onSelect={setActivePath}
                     onClose={closeTab}
+                    onCloseOthers={closeOthers}
+                    onCloseAll={closeAll}
                   />
                 )}
                 {activeTab ? (
