@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { ChevronRight, File, Folder, PenTool } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
 
@@ -187,6 +188,7 @@ export function PendingRow({
   onCommit: (name: string) => void | Promise<void>;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="tree-row" style={{ paddingLeft: 6 + depth * 12 }}>
       <span className="tree-row-disclosure" />
@@ -196,7 +198,8 @@ export function PendingRow({
       <InlineInput
         initial=""
         placeholder={
-          placeholder ?? (kind === "dir" ? "New folder" : "New file")
+          placeholder ??
+          (kind === "dir" ? t("explorer.newFolder") : t("explorer.newFile"))
         }
         onCommit={onCommit}
         onCancel={onCancel}

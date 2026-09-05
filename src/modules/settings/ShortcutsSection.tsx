@@ -1,3 +1,4 @@
+import { type MessageKey, useI18n } from "@/lib/i18n";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { ShortcutAction } from "./lib/editorSettings";
@@ -29,33 +30,43 @@ function matches(q: string, ...fields: string[]): boolean {
 }
 
 export function ShortcutsSection() {
+  const { t, locale } = useI18n();
   const { settings, setShortcut } = useEditorSettings();
   const [recording, setRecording] = useState<ShortcutAction | null>(null);
   const [query, setQuery] = useState("");
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `locale` re-runs the filter so it matches translated text
   const rebindable = useMemo(
     () =>
       ACTIONS.filter((a) =>
         matches(
           query,
           "editor",
-          a.label,
-          a.desc,
+          t(a.labelKey),
+          t(a.descKey),
           settings.shortcuts[a.value],
           formatBinding(settings.shortcuts[a.value]),
         ),
       ),
-    [query, settings.shortcuts],
+    [query, settings.shortcuts, locale],
   );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `locale` re-runs the filter so it matches translated text
   const fixed = useMemo(
     () =>
       FIXED.filter((f) =>
-        matches(query, f.group, f.label, f.desc, f.keys, formatBinding(f.keys)),
+        matches(
+          query,
+          t(f.group),
+          t(f.labelKey),
+          t(f.descKey),
+          f.keysKey ? t(f.keysKey) : f.keys,
+          formatBinding(f.keys),
+        ),
       ),
-    [query],
+    [query, locale],
   );
   const groups = useMemo(() => {
-    const out = new Map<string, typeof FIXED>();
+    const out = new Map<MessageKey, typeof FIXED>();
     for (const f of fixed) {
       const list = out.get(f.group) ?? [];
       list.push(f);
@@ -66,30 +77,29 @@ export function ShortcutsSection() {
 
   return (
     <div className="settings-section" id="settings-shortcuts">
-      <div className="settings-section-title">Keyboard Shortcuts</div>
-      <p className="settings-section-desc">
-        Everything the keyboard can do, in one place. Editor actions are
-        rebindable: click a binding, then press the new key combination.
-      </p>
+      <div className="settings-section-title">{t("shortcuts.title")}</div>
+      <p className="settings-section-desc">{t("shortcuts.desc")}</p>
       <div className="settings-shortcut-search">
         <Search size={13} strokeWidth={1.75} />
         <input
           type="search"
           className="settings-input"
-          placeholder="Search shortcuts…"
+          placeholder={t("shortcuts.searchPlaceholder")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>
       <div className="settings-form">
         {rebindable.length > 0 && (
-          <div className="settings-shortcut-group">Editor (rebindable)</div>
+          <div className="settings-shortcut-group">
+            {t("shortcuts.editorRebindable")}
+          </div>
         )}
         {rebindable.map((a) => (
           <div key={a.value} className="settings-shortcut-row">
             <div className="settings-shortcut-info">
-              <span className="settings-shortcut-label">{a.label}</span>
-              <span className="settings-hint">{a.desc}</span>
+              <span className="settings-shortcut-label">{t(a.labelKey)}</span>
+              <span className="settings-hint">{t(a.descKey)}</span>
             </div>
             <button
               type="button"
@@ -110,29 +120,33 @@ export function ShortcutsSection() {
               }}
             >
               {recording === a.value
-                ? "Press keys…"
+                ? t("shortcuts.pressKeys")
                 : formatBinding(settings.shortcuts[a.value])}
             </button>
           </div>
         ))}
         {groups.map(([group, items]) => (
           <div key={group} className="settings-shortcut-groupwrap">
-            <div className="settings-shortcut-group">{group}</div>
+            <div className="settings-shortcut-group">{t(group)}</div>
             {items.map((f) => (
-              <div key={f.label} className="settings-shortcut-row">
+              <div key={f.labelKey} className="settings-shortcut-row">
                 <div className="settings-shortcut-info">
-                  <span className="settings-shortcut-label">{f.label}</span>
-                  <span className="settings-hint">{f.desc}</span>
+                  <span className="settings-shortcut-label">
+                    {t(f.labelKey)}
+                  </span>
+                  <span className="settings-hint">{t(f.descKey)}</span>
                 </div>
                 <span className="settings-shortcut-key settings-shortcut-key-fixed">
-                  {formatBinding(f.keys)}
+                  {f.keysKey ? t(f.keysKey) : formatBinding(f.keys)}
                 </span>
               </div>
             ))}
           </div>
         ))}
         {rebindable.length === 0 && fixed.length === 0 && (
-          <span className="settings-hint">No shortcuts match "{query}".</span>
+          <span className="settings-hint">
+            {t("shortcuts.noMatch", { query })}
+          </span>
         )}
       </div>
     </div>

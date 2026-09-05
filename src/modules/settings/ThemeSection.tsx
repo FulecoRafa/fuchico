@@ -1,19 +1,21 @@
+import { type MessageKey, useI18n } from "@/lib/i18n";
 import { usePrefersDark } from "@/lib/usePrefersDark";
 import { useEffect, useRef, useState } from "react";
 import type { ColorMode, Palette } from "./lib/editorSettings";
 import { useEditorSettings } from "./lib/editorSettings";
 
-const PALETTES: { value: Palette; label: string }[] = [
+/** Palette names are proper nouns except "Custom", which is translated. */
+const PALETTES: { value: Palette; label: string | null }[] = [
   { value: "ayu", label: "Ayu" },
   { value: "dracula", label: "Dracula" },
   { value: "catppuccin", label: "Catppuccin" },
-  { value: "custom", label: "Custom" },
+  { value: "custom", label: null },
 ];
 
-const MODES: { value: ColorMode; label: string }[] = [
-  { value: "system", label: "System" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
+const MODES: { value: ColorMode; labelKey: MessageKey }[] = [
+  { value: "system", labelKey: "settings.theme.modeSystem" },
+  { value: "light", labelKey: "settings.theme.modeLight" },
+  { value: "dark", labelKey: "settings.theme.modeDark" },
 ];
 
 const PREVIEW_STYLE_ID = "fuchico-custom-theme-preview";
@@ -35,6 +37,7 @@ function setPreviewCss(css: string) {
 }
 
 export function ThemeSection() {
+  const { t } = useI18n();
   const { settings, setSettings } = useEditorSettings();
   const prefersDark = usePrefersDark();
   const [customCssDraft, setCustomCssDraft] = useState(settings.customThemeCss);
@@ -70,15 +73,12 @@ export function ThemeSection() {
 
   return (
     <div className="settings-section">
-      <div className="settings-section-title">Theme</div>
-      <p className="settings-section-desc">
-        A theme is a color choice, independent of light/dark mode. Each palette
-        may support a light and/or dark variant.
-      </p>
+      <div className="settings-section-title">{t("settings.theme.title")}</div>
+      <p className="settings-section-desc">{t("settings.theme.desc")}</p>
 
       <div className="settings-form">
         <div className="settings-field">
-          <span className="settings-label">Palette</span>
+          <span className="settings-label">{t("settings.theme.palette")}</span>
           <div className="theme-palette-options">
             {PALETTES.map((p) => (
               <button
@@ -87,14 +87,14 @@ export function ThemeSection() {
                 className={`theme-palette-btn${settings.palette === p.value ? " theme-palette-btn-active" : ""}`}
                 onClick={() => setSettings({ palette: p.value })}
               >
-                {p.label}
+                {p.label ?? t("settings.theme.paletteCustom")}
               </button>
             ))}
           </div>
         </div>
 
         <div className="settings-field">
-          <span className="settings-label">Mode</span>
+          <span className="settings-label">{t("settings.theme.mode")}</span>
           <div className="theme-palette-options">
             {MODES.map((m) => (
               <button
@@ -104,20 +104,22 @@ export function ThemeSection() {
                 className={`theme-palette-btn${settings.mode === m.value ? " theme-palette-btn-active" : ""}`}
                 onClick={() => setSettings({ mode: m.value })}
               >
-                {m.label}
+                {t(m.labelKey)}
               </button>
             ))}
           </div>
           {isDracula && (
             <span className="settings-hint">
-              Dracula only ships a dark palette, so mode is fixed to dark.
+              {t("settings.theme.draculaHint")}
             </span>
           )}
         </div>
 
         {settings.palette === "custom" && (
           <div className="settings-field">
-            <span className="settings-label">Custom CSS variables</span>
+            <span className="settings-label">
+              {t("settings.theme.customCss")}
+            </span>
             <textarea
               className="settings-input settings-textarea"
               rows={8}
@@ -132,9 +134,9 @@ export function ThemeSection() {
               }}
             />
             <span className="settings-hint">
-              Declarations are injected as-is into a{" "}
-              <code>[data-palette="custom"]</code> rule. Preview updates as you
-              type; click Apply to use it across the whole app.
+              {t("settings.theme.customCssHintPrefix")}{" "}
+              <code>[data-palette="custom"]</code>{" "}
+              {t("settings.theme.customCssHintSuffix")}
             </span>
             <div className="settings-actions">
               <button
@@ -146,11 +148,11 @@ export function ThemeSection() {
                   setApplied(true);
                 }}
               >
-                Apply
+                {t("common.apply")}
               </button>
               {applied && (
                 <span className="settings-status settings-status-ok">
-                  Applied
+                  {t("common.applied")}
                 </span>
               )}
             </div>
@@ -158,7 +160,7 @@ export function ThemeSection() {
         )}
 
         <div className="settings-field">
-          <span className="settings-label">Preview</span>
+          <span className="settings-label">{t("common.preview")}</span>
           <div
             className="theme-preview"
             data-palette={settings.palette}
@@ -171,13 +173,15 @@ export function ThemeSection() {
             </div>
             <div className="theme-preview-body">
               <div className="theme-preview-buttons">
-                <span className="btn theme-preview-btn">Primary</span>
+                <span className="btn theme-preview-btn">
+                  {t("settings.preview.primary")}
+                </span>
                 <span className="btn btn-secondary theme-preview-btn">
-                  Secondary
+                  {t("settings.preview.secondary")}
                 </span>
               </div>
               <p className="theme-preview-text">
-                The quick brown fox jumps over the lazy dog.
+                {t("settings.preview.pangram")}
               </p>
               <pre className="theme-preview-code">
                 <span className="theme-preview-syntax-keyword">function</span>{" "}

@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { Search } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { AboutSection } from "./AboutSection";
@@ -6,6 +7,7 @@ import { FoldingSection } from "./FoldingSection";
 import { FontSection } from "./FontSection";
 import { IntegrationsSection } from "./IntegrationsSection";
 import { KeybindingSection } from "./KeybindingSection";
+import { LanguageSection } from "./LanguageSection";
 import {
   SETTINGS_SECTIONS,
   type SettingsSectionId,
@@ -31,6 +33,7 @@ function SectionBody({
     case "appearance":
       return (
         <>
+          <LanguageSection />
           <ThemeSection />
           <FontSection />
         </>
@@ -97,6 +100,7 @@ function applyFilter(root: HTMLElement, query: string) {
 }
 
 export function SettingsView({ rootPath }: Props) {
+  const { t } = useI18n();
   const section = useSettingsSection();
   const [query, setQuery] = useState("");
   const contentRef = useRef<HTMLDivElement>(null);
@@ -112,7 +116,7 @@ export function SettingsView({ rootPath }: Props) {
 
   return (
     <div className="settings-view">
-      <nav className="settings-nav" aria-label="Settings sections">
+      <nav className="settings-nav" aria-label={t("settings.sectionsAria")}>
         <div className="settings-search">
           <Search
             size={13}
@@ -122,7 +126,7 @@ export function SettingsView({ rootPath }: Props) {
           <input
             type="search"
             className="settings-input"
-            placeholder="Search settings…"
+            placeholder={t("settings.searchPlaceholder")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -141,7 +145,7 @@ export function SettingsView({ rootPath }: Props) {
               settingsNav.set(s.id);
             }}
           >
-            {s.label}
+            {t(s.labelKey)}
           </button>
         ))}
       </nav>
@@ -150,12 +154,12 @@ export function SettingsView({ rootPath }: Props) {
           <>
             {noResults && (
               <div className="settings-status">
-                No settings match "{query}".
+                {t("settings.noResults", { query })}
               </div>
             )}
             {SETTINGS_SECTIONS.map((s) => (
               <div key={s.id} className="settings-group" data-section={s.id}>
-                <div className="settings-group-title">{s.label}</div>
+                <div className="settings-group-title">{t(s.labelKey)}</div>
                 <SectionBody id={s.id} rootPath={rootPath} />
               </div>
             ))}

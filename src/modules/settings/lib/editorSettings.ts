@@ -3,6 +3,8 @@ import { useSyncExternalStore } from "react";
 export type Palette = "ayu" | "dracula" | "catppuccin" | "custom";
 export type ColorMode = "system" | "light" | "dark";
 export type KeybindingMode = "helix" | "vim" | "normal";
+/** UI language setting; "system" resolves via `navigator.language`. */
+export type AppLanguage = "system" | "en" | "pt-BR";
 
 export type ShortcutAction =
   | "openOutline"
@@ -18,6 +20,8 @@ export type ShortcutAction =
 export type Shortcuts = Record<ShortcutAction, string>;
 
 export type EditorSettings = {
+  /** UI language; "system" follows the OS language (issue #48). */
+  language: AppLanguage;
   palette: Palette;
   mode: ColorMode;
   customThemeCss: string;
@@ -70,6 +74,7 @@ export function clampUiScale(scale: number): number {
 const STORAGE_KEY = "helix.editorSettings";
 
 export const DEFAULT_SETTINGS: EditorSettings = {
+  language: "system",
   palette: "ayu",
   mode: "system",
   customThemeCss: "",

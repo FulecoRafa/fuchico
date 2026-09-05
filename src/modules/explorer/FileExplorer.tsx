@@ -5,6 +5,7 @@ import {
   openWithExternalTool,
   revealInFileManager,
 } from "@/lib/fileActions";
+import { t, useI18n } from "@/lib/i18n";
 import { useEditorSettings } from "@/modules/settings/lib/editorSettings";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
@@ -143,7 +144,7 @@ function buildRows(
             key: `loading:${path}`,
             depth: depth + 1,
             tone: "muted",
-            message: "Loading…",
+            message: t("common.loading"),
           });
         } else if (child?.status === "error") {
           rows.push({
@@ -178,6 +179,8 @@ export function FileExplorer({
     [onPathRenamed, onPathDeleted],
   );
   const tree = useFileTree(rootPath, treeOptions);
+  // Subscribe to language changes so menus/labels re-render translated.
+  useI18n();
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [menu, setMenu] = useState<MenuState>(null);
   const externalTool = useEditorSettings().settings.externalTool;
@@ -316,8 +319,8 @@ export function FileExplorer({
       const label =
         paths.length === 1
           ? `"${basename(paths[0])}"`
-          : `${paths.length} items`;
-      if (!window.confirm(`Delete ${label}?`)) return;
+          : t("explorer.itemsCount", { count: paths.length });
+      if (!window.confirm(t("explorer.confirmDelete", { name: label }))) return;
       void (async () => {
         for (const p of paths) await tree.deletePath(p);
       })();
@@ -344,12 +347,18 @@ export function FileExplorer({
       else tree.refresh(toDir);
       if (result.errors.length > 0) {
         setNotice({
-          text: `Import failed: ${result.errors.join("; ")}`,
+          text: t("explorer.importFailed", {
+            errors: result.errors.join("; "),
+          }),
           tone: "error",
         });
       } else {
+        const count = result.imported.length;
         setNotice({
-          text: `Imported ${result.imported.length} file${result.imported.length === 1 ? "" : "s"} into ${basename(toDir)}`,
+          text:
+            count === 1
+              ? t("explorer.importedOne", { folder: basename(toDir) })
+              : t("explorer.importedMany", { count, folder: basename(toDir) }),
           tone: "muted",
         });
       }
@@ -454,7 +463,9 @@ export function FileExplorer({
       const ghost = document.createElement("div");
       ghost.className = "tree-drag-ghost";
       ghost.textContent =
-        paths.length > 1 ? `${paths.length} items` : basename(path);
+        paths.length > 1
+          ? t("explorer.itemsCount", { count: paths.length })
+          : basename(path);
       document.body.appendChild(ghost);
       e.dataTransfer.setDragImage(ghost, 8, 12);
       requestAnimationFrame(() => ghost.remove());
@@ -476,7 +487,7 @@ export function FileExplorer({
   }, [dropTarget, rootPath, tree.expanded, tree.toggle]);
 
   if (!rootPath) {
-    return <div className="explorer-empty">No folder open</div>;
+    return <div className="explorer-empty">{t("explorer.noFolderOpen")}</div>;
   }
 
   const menuItems: ContextMenuItem[] = menu
@@ -484,22 +495,22 @@ export function FileExplorer({
         ...(menu.isDir
           ? ([
               {
-                label: "New file",
+                label: t("explorer.newFile"),
                 icon: FilePlus,
                 onSelect: () => tree.beginCreate(menu.path, "file"),
               },
               {
-                label: "New folder",
+                label: t("explorer.newFolder"),
                 icon: FolderPlus,
                 onSelect: () => tree.beginCreate(menu.path, "dir"),
               },
               {
-                label: "New drawing",
+                label: t("explorer.newDrawing"),
                 icon: PenTool,
                 onSelect: () =>
                   tree.beginCreate(menu.path, "file", {
                     defaultExt: "excalidraw",
-                    placeholder: "New drawing",
+                    placeholder: t("explorer.newDrawing"),
                   }),
               },
               { kind: "separator" },
@@ -508,29 +519,34 @@ export function FileExplorer({
         ...(!menu.isDir && onOpenInWindow
           ? ([
               {
-                label: "Open in new window",
+                label: t("tabs.openInNewWindow"),
                 icon: AppWindow,
                 onSelect: () => onOpenInWindow(menu.path),
               },
             ] satisfies ContextMenuItem[])
           : []),
         {
-          label: "Rename",
+          label: t("common.rename"),
           icon: Pencil,
           onSelect: () => tree.beginRename(menu.path),
         },
         {
           label:
             targetsFor(menu.path).length > 1
-              ? `Cut ${targetsFor(menu.path).length} items`
-              : "Cut",
+              ? t("explorer.cutItems", { count: targetsFor(menu.path).length })
+              : t("explorer.cut"),
           icon: Scissors,
           onSelect: () => setCutPaths(targetsFor(menu.path)),
         },
         ...(cutPaths.length > 0
           ? ([
               {
-                label: `Paste ${cutPaths.length === 1 ? basename(cutPaths[0]) : `${cutPaths.length} items`} here`,
+                label: t("explorer.pasteHere", {
+                  name:
+                    cutPaths.length === 1
+                      ? basename(cutPaths[0])
+                      : t("explorer.itemsCount", { count: cutPaths.length }),
+                }),
                 icon: Copy,
                 onSelect: () => pasteCutInto(dropDirFor(menu.path, menu.isDir)),
               },
@@ -538,22 +554,22 @@ export function FileExplorer({
           : []),
         { kind: "separator" },
         {
-          label: "Reveal in file manager",
+          label: t("common.revealInFileManager"),
           icon: Eye,
           onSelect: () => void revealInFileManager(menu.path),
         },
         {
           label: externalTool.trim()
-            ? `Open with ${externalTool.trim()}`
-            : "Open with default app",
+            ? t("explorer.openWith", { tool: externalTool.trim() })
+            : t("explorer.openWithDefault"),
           icon: ExternalLink,
           onSelect: () => void openWithExternalTool(menu.path, externalTool),
         },
         {
           label:
             targetsFor(menu.path).length > 1
-              ? `Copy ${targetsFor(menu.path).length} paths`
-              : "Copy path",
+              ? t("explorer.copyPaths", { count: targetsFor(menu.path).length })
+              : t("common.copyPath"),
           icon: Copy,
           onSelect: () =>
             void copyPathToClipboard(targetsFor(menu.path).join("\n")),
@@ -562,8 +578,10 @@ export function FileExplorer({
         {
           label:
             targetsFor(menu.path).length > 1
-              ? `Delete ${targetsFor(menu.path).length} items`
-              : "Delete",
+              ? t("explorer.deleteItems", {
+                  count: targetsFor(menu.path).length,
+                })
+              : t("common.delete"),
           icon: Trash2,
           danger: true,
           onSelect: () => deleteAll(targetsFor(menu.path)),
@@ -775,7 +793,7 @@ export function FileExplorer({
         <button
           type="button"
           className="explorer-header-btn"
-          title="Open folder…"
+          title={t("explorer.openFolderAction")}
           onClick={onOpenFolder}
         >
           <FolderOpen size={14} strokeWidth={1.75} />
@@ -783,7 +801,7 @@ export function FileExplorer({
         <button
           type="button"
           className="explorer-header-btn"
-          title="New file"
+          title={t("explorer.newFile")}
           onClick={() => tree.beginCreate(rootPath, "file")}
         >
           <FilePlus size={14} strokeWidth={1.75} />
@@ -791,7 +809,7 @@ export function FileExplorer({
         <button
           type="button"
           className="explorer-header-btn"
-          title="New folder"
+          title={t("explorer.newFolder")}
           onClick={() => tree.beginCreate(rootPath, "dir")}
         >
           <FolderPlus size={14} strokeWidth={1.75} />
@@ -799,11 +817,11 @@ export function FileExplorer({
         <button
           type="button"
           className="explorer-header-btn"
-          title="New drawing"
+          title={t("explorer.newDrawing")}
           onClick={() =>
             tree.beginCreate(rootPath, "file", {
               defaultExt: "excalidraw",
-              placeholder: "New drawing",
+              placeholder: t("explorer.newDrawing"),
             })
           }
         >
@@ -812,7 +830,7 @@ export function FileExplorer({
         <button
           type="button"
           className="explorer-header-btn"
-          title="Refresh"
+          title={t("explorer.refresh")}
           onClick={() => tree.refresh(rootPath)}
         >
           <RefreshCw size={14} strokeWidth={1.75} />
@@ -847,7 +865,7 @@ export function FileExplorer({
           />
         ) : null}
         {root?.status === "loading" && (
-          <div className="explorer-status">Loading…</div>
+          <div className="explorer-status">{t("common.loading")}</div>
         )}
         {root?.status === "error" && (
           <div className="explorer-status explorer-status-error">

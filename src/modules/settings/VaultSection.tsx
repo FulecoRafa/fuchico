@@ -1,20 +1,23 @@
+import { useI18n } from "@/lib/i18n";
 import { useEditorSettings } from "./lib/editorSettings";
 
 /** Vault-relative folders used by daily notes, templates and attachments. */
 export function VaultSection() {
+  const { t } = useI18n();
   const { settings, setSettings } = useEditorSettings();
   return (
     <div className="settings-section">
-      <div className="settings-section-title">Vault Folders</div>
+      <div className="settings-section-title">{t("settings.vault.title")}</div>
       <p className="settings-section-desc">
-        Relative to the open vault. "Open Today's Daily Note" and "New Note from
-        Template" live in the command palette (Cmd/Ctrl-Shift-P); templates may
-        use {"{{date}}"}, {"{{time}}"}, {"{{title}}"} and{" "}
-        {"{{date:YYYY-MM-DD}}"}. Pasted images go to <code>attachments/</code>.
+        {t("settings.vault.descPrefix")} {"{{date}}"}, {"{{time}}"},{" "}
+        {"{{title}}"} {t("settings.vault.and")} {"{{date:YYYY-MM-DD}}"}
+        {t("settings.vault.descImages")} <code>attachments/</code>.
       </p>
       <div className="settings-form">
         <div className="settings-field">
-          <span className="settings-label">Daily notes folder</span>
+          <span className="settings-label">
+            {t("settings.vault.dailyNotesFolder")}
+          </span>
           <input
             type="text"
             className="settings-input"
@@ -23,7 +26,9 @@ export function VaultSection() {
           />
         </div>
         <div className="settings-field">
-          <span className="settings-label">Templates folder</span>
+          <span className="settings-label">
+            {t("settings.vault.templatesFolder")}
+          </span>
           <input
             type="text"
             className="settings-input"
@@ -31,20 +36,23 @@ export function VaultSection() {
             onChange={(e) => setSettings({ templatesFolder: e.target.value })}
           />
           <span className="settings-hint">
-            A <code>daily.md</code> here seeds new daily notes.
+            {t("settings.vault.templatesHintPrefix")} <code>daily.md</code>{" "}
+            {t("settings.vault.templatesHintSuffix")}
           </span>
         </div>
         <div className="settings-field">
-          <span className="settings-label">External tool</span>
+          <span className="settings-label">
+            {t("settings.vault.externalTool")}
+          </span>
           <input
             type="text"
             className="settings-input"
-            placeholder='e.g. "Visual Studio Code" (empty = OS default)'
+            placeholder={t("settings.vault.externalToolPlaceholder")}
             value={settings.externalTool}
             onChange={(e) => setSettings({ externalTool: e.target.value })}
           />
           <span className="settings-hint">
-            Used by "Open with…" in the file explorer's right-click menu.
+            {t("settings.vault.externalToolHint")}
           </span>
         </div>
       </div>

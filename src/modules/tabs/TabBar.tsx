@@ -1,4 +1,5 @@
 import { ContextMenu, type ContextMenuItem } from "@/lib/ContextMenu";
+import { useI18n } from "@/lib/i18n";
 import { X } from "lucide-react";
 import { useState } from "react";
 import type { Tab } from "./lib/useTabs";
@@ -30,22 +31,23 @@ export function TabBar({
   onCloseAll,
   onOpenInWindow,
 }: Props) {
+  const { t } = useI18n();
   const [menu, setMenu] = useState<MenuState>(null);
 
   const menuItems: ContextMenuItem[] = menu
     ? [
-        { label: "Close", onSelect: () => onClose(menu.path) },
+        { label: t("tabs.close"), onSelect: () => onClose(menu.path) },
         {
-          label: "Close others",
+          label: t("tabs.closeOthers"),
           disabled: tabs.length < 2,
           onSelect: () => onCloseOthers(menu.path),
         },
-        { label: "Close all", onSelect: onCloseAll },
+        { label: t("tabs.closeAll"), onSelect: onCloseAll },
         ...(onOpenInWindow
           ? ([
               { kind: "separator" },
               {
-                label: "Open in new window",
+                label: t("tabs.openInNewWindow"),
                 onSelect: () => onOpenInWindow(menu.path),
               },
             ] satisfies ContextMenuItem[])
@@ -82,7 +84,7 @@ export function TabBar({
             <button
               type="button"
               className="tab-close-btn"
-              title="Close"
+              title={t("tabs.close")}
               onClick={(e) => {
                 e.stopPropagation();
                 onClose(tab.path);

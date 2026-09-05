@@ -1,3 +1,4 @@
+import type { MessageKey } from "@/lib/i18n/en";
 import { useSyncExternalStore } from "react";
 
 export type SettingsSectionId =
@@ -10,31 +11,36 @@ export type SettingsSectionId =
 
 export const SETTINGS_SECTIONS: readonly {
   id: SettingsSectionId;
-  label: string;
+  /** i18n key for the section name — render with `t(labelKey)`. */
+  labelKey: MessageKey;
   keywords: string[];
 }[] = [
   {
     id: "appearance",
-    label: "Appearance",
-    keywords: ["theme", "font", "zoom"],
+    labelKey: "settingsNav.appearance",
+    keywords: ["theme", "font", "zoom", "language", "idioma"],
   },
   {
     id: "editor",
-    label: "Editor",
+    labelKey: "settingsNav.editor",
     keywords: ["keybindings", "helix", "vim", "folding", "behavior"],
   },
   {
     id: "shortcuts",
-    label: "Keyboard Shortcuts",
+    labelKey: "settingsNav.shortcuts",
     keywords: ["keys", "hotkeys"],
   },
   {
     id: "vault",
-    label: "Vault",
+    labelKey: "settingsNav.vault",
     keywords: ["folders", "daily", "templates", "external tool"],
   },
-  { id: "integrations", label: "Integrations", keywords: ["caldav", "sync"] },
-  { id: "about", label: "About", keywords: ["version"] },
+  {
+    id: "integrations",
+    labelKey: "settingsNav.integrations",
+    keywords: ["caldav", "sync"],
+  },
+  { id: "about", labelKey: "settingsNav.about", keywords: ["version"] },
 ];
 
 const KEY = "helix.settingsSection";

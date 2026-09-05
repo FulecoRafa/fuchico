@@ -1,4 +1,5 @@
 import { openEditorWindow } from "@/lib/editorWindow";
+import { t, useLocale } from "@/lib/i18n";
 import { AgendaView } from "@/modules/agenda";
 import {
   EditorPane,
@@ -61,6 +62,9 @@ type MermaidDock = { blockKey: string; label: string; initialText?: string };
 function App() {
   useTheme();
   useZoomShortcuts();
+  // Language changes re-render the shell (activity-bar titles, empty states)
+  // and rebuild the palette commands below.
+  const locale = useLocale();
   const [rootPath, setRootPath] = useState<string | null>(null);
   const {
     tabs,
@@ -189,7 +193,7 @@ function App() {
     (payload: { blockKey: string; text: string }) => {
       setMermaidDock({
         blockKey: payload.blockKey,
-        label: "Diagram",
+        label: t("app.diagram"),
         initialText: payload.text,
       });
     },
@@ -224,6 +228,7 @@ function App() {
     onOpenCommandPalette: () => openCommandPalette(),
   });
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `locale` re-runs buildAppCommands so command titles re-translate
   const commands = useMemo(
     () =>
       buildAppCommands({
@@ -260,6 +265,7 @@ function App() {
       vaultFiles,
       openFile,
       openInWindow,
+      locale,
     ],
   );
 
@@ -277,7 +283,7 @@ function App() {
               ? "app-activitybar-btn app-activitybar-btn-active"
               : "app-activitybar-btn"
           }
-          title="Files"
+          title={t("app.files")}
           onClick={() => setMainView("editor")}
         >
           <Files size={17} strokeWidth={1.75} />
@@ -289,7 +295,7 @@ function App() {
               ? "app-activitybar-btn app-activitybar-btn-active"
               : "app-activitybar-btn"
           }
-          title="Tasks & Calendar"
+          title={t("app.tasksCalendar")}
           onClick={() => setMainView("agenda")}
         >
           <CalendarClock size={17} strokeWidth={1.75} />
@@ -301,7 +307,7 @@ function App() {
               ? "app-activitybar-btn app-activitybar-btn-active"
               : "app-activitybar-btn"
           }
-          title="Search"
+          title={t("app.search")}
           onClick={() => setMainView("search")}
         >
           <Search size={17} strokeWidth={1.75} />
@@ -313,7 +319,7 @@ function App() {
               ? "app-activitybar-btn app-activitybar-btn-active"
               : "app-activitybar-btn"
           }
-          title="Tags"
+          title={t("app.tags")}
           onClick={() => setMainView("tags")}
         >
           <Hash size={17} strokeWidth={1.75} />
@@ -325,7 +331,7 @@ function App() {
               ? "app-activitybar-btn app-activitybar-btn-active"
               : "app-activitybar-btn"
           }
-          title="Settings"
+          title={t("app.settings")}
           onClick={() => setMainView("settings")}
         >
           <Settings size={17} strokeWidth={1.75} />
@@ -351,7 +357,7 @@ function App() {
                 onClick={() => void handleOpenFolder()}
               >
                 <FolderOpen size={14} strokeWidth={1.75} />
-                Open Folder
+                {t("common.openFolder")}
               </button>
             </div>
           )}
@@ -387,7 +393,11 @@ function App() {
                 {activeTab ? (
                   activeTab.path.toLowerCase().endsWith(".excalidraw") ? (
                     <Suspense
-                      fallback={<div className="editor-status">Loading…</div>}
+                      fallback={
+                        <div className="editor-status">
+                          {t("common.loading")}
+                        </div>
+                      }
                     >
                       <ExcalidrawPane
                         key={activeTab.path}
@@ -416,7 +426,7 @@ function App() {
                     />
                   )
                 ) : (
-                  <div className="editor-status">No file open</div>
+                  <div className="editor-status">{t("app.noFileOpen")}</div>
                 )}
               </div>
             )}
@@ -435,7 +445,9 @@ function App() {
                 style={{ width: dockWidthRef.current }}
               >
                 <Suspense
-                  fallback={<div className="editor-status">Loading…</div>}
+                  fallback={
+                    <div className="editor-status">{t("common.loading")}</div>
+                  }
                 >
                   <MermaidPane
                     key={mermaidDock.blockKey}

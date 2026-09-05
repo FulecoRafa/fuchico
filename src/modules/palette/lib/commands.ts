@@ -1,3 +1,4 @@
+import { t } from "@/lib/i18n";
 import {
   editorSettingsStore,
   type ShortcutAction,
@@ -57,7 +58,7 @@ export type CommandContext = {
 function toggleThemeCommand(): AppCommand {
   return {
     id: "toggle-theme",
-    title: "Toggle Theme (Light / Dark)",
+    title: t("command.toggleTheme"),
     keywords: ["dark mode", "light mode", "appearance", "color scheme"],
     aliases: [":theme"],
     run: () => {
@@ -78,46 +79,46 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
   const commands: AppCommand[] = [
     {
       id: "go-to-editor",
-      title: "Go to Editor",
+      title: t("command.goToEditor"),
       keywords: ["files", "explorer", "view"],
       run: () => ctx.setMainView("editor"),
     },
     {
       id: "go-to-agenda",
-      title: "Go to Tasks & Calendar",
+      title: t("command.goToAgenda"),
       keywords: ["agenda", "tasks", "calendar", "view"],
       run: () => ctx.setMainView("agenda"),
     },
     {
       id: "go-to-search",
-      title: "Go to Search",
+      title: t("command.goToSearch"),
       keywords: ["find", "view"],
       run: () => ctx.setMainView("search"),
     },
     {
       id: "go-to-settings",
-      title: "Go to Settings",
+      title: t("command.goToSettings"),
       keywords: ["preferences", "config", "view"],
       run: () => ctx.setMainView("settings"),
     },
     ...(ctx.hasActiveTab
       ? SHORTCUT_ACTIONS.map((a) => ({
           id: `editor:${a.value}`,
-          title: `Editor: ${a.label}`,
-          keywords: ["task", "insert", "editor", a.desc],
+          title: t("command.editorAction", { name: t(a.labelKey) }),
+          keywords: ["task", "insert", "editor", t(a.descKey)],
           binding: editorSettingsStore.get().shortcuts[a.value],
           run: () => ctx.runEditorAction(a.value),
         }))
       : []),
     ...SETTINGS_SECTIONS.map((s) => ({
       id: `settings:${s.id}`,
-      title: `Settings: ${s.label}`,
+      title: t("command.settingsSection", { name: t(s.labelKey) }),
       keywords: ["preferences", "config", ...s.keywords],
       run: () => ctx.openSettings(s.id),
     })),
     {
       id: "open-folder",
-      title: "Open Folder…",
+      title: t("command.openFolder"),
       keywords: ["vault", "workspace", "directory"],
       run: () => ctx.openFolder(),
     },
@@ -126,7 +127,7 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
   if (ctx.hasRootPath) {
     commands.push({
       id: "quick-open-file",
-      title: "Quick Open: Go to File…",
+      title: t("command.quickOpen"),
       keywords: ["switcher", "find file", "open file"],
       binding: "Mod-p",
       aliases: [":o", ":open", ":e", ":edit"],
@@ -138,7 +139,7 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
     commands.push(
       {
         id: "save-file",
-        title: "Save File",
+        title: t("command.saveFile"),
         keywords: ["write"],
         binding: "Mod-s",
         aliases: [":w", ":write"],
@@ -146,7 +147,7 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
       },
       {
         id: "save-and-close",
-        title: "Save and Close Tab",
+        title: t("command.saveAndCloseTab"),
         keywords: ["write quit"],
         aliases: [":wq", ":x"],
         run: () => {
@@ -156,7 +157,7 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
       },
       {
         id: "close-active-tab",
-        title: "Close Active Tab",
+        title: t("command.closeActiveTab"),
         keywords: ["close file"],
         aliases: [":q", ":quit", ":bc"],
         run: () => ctx.closeActiveTab(),
@@ -167,7 +168,7 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
   if (ctx.hasOpenTabs) {
     commands.push({
       id: "close-all-tabs",
-      title: "Close All Tabs",
+      title: t("command.closeAllTabs"),
       keywords: ["close everything"],
       aliases: [":qa"],
       run: () => ctx.closeAllTabs(),
@@ -179,7 +180,7 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
     const { dailyNotesFolder, templatesFolder } = editorSettingsStore.get();
     commands.push({
       id: "open-daily-note",
-      title: "Open Today's Daily Note",
+      title: t("command.openDailyNote"),
       keywords: ["journal", "today", "diary", "new note"],
       run: () => {
         void openDailyNote({ root, dailyNotesFolder, templatesFolder }).then(
@@ -194,7 +195,7 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
     )) {
       commands.push({
         id: `new-from-template:${template}`,
-        title: `New Note from Template: ${stem(template)}`,
+        title: t("command.newFromTemplate", { name: stem(template) }),
         keywords: ["template", "create", "new note"],
         run: () => {
           void createFromTemplate(root, template).then((path) =>
@@ -207,7 +208,7 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
 
   commands.push({
     id: "keyboard-shortcuts",
-    title: "Keyboard Shortcuts",
+    title: t("command.keyboardShortcuts"),
     keywords: ["keys", "hotkeys", "bindings", "help"],
     run: () => ctx.openSettings("shortcuts"),
   });
@@ -215,7 +216,7 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
   if (ctx.hasActiveTab) {
     commands.push({
       id: "open-in-new-window",
-      title: "Open in New Window",
+      title: t("command.openInNewWindow"),
       keywords: ["detach", "window", "popout", "second monitor"],
       run: ctx.openActiveInNewWindow,
     });

@@ -1,113 +1,122 @@
+import type { MessageKey } from "@/lib/i18n/en";
+
 /** Built-in (non-rebindable) shortcuts, listed so the whole keyboard map is
  * discoverable in one place (issue #7). Rendered in Settings › Keyboard
- * Shortcuts and reused by the command palette for its binding hints. */
+ * Shortcuts and reused by the command palette for its binding hints. Text
+ * fields are i18n message keys; `keys` stays the raw key combination (fed to
+ * `formatBinding`), except rows with `keysKey`, whose hint is itself a
+ * translatable word ("Click", "Right-click"). */
 export const FIXED_SHORTCUTS: {
-  group: string;
-  label: string;
-  desc: string;
+  group: MessageKey;
+  labelKey: MessageKey;
+  descKey: MessageKey;
   keys: string;
+  keysKey?: MessageKey;
 }[] = [
   {
-    group: "Global",
-    label: "Command palette",
-    desc: "Run any app command by name.",
+    group: "shortcuts.group.global",
+    labelKey: "shortcuts.fixed.commandPalette.label",
+    descKey: "shortcuts.fixed.commandPalette.desc",
     keys: "Mod-Shift-p",
   },
   {
-    group: "Global",
-    label: "Quick open file",
-    desc: "Fuzzy-find a note in the vault.",
+    group: "shortcuts.group.global",
+    labelKey: "shortcuts.fixed.quickOpen.label",
+    descKey: "shortcuts.fixed.quickOpen.desc",
     keys: "Mod-p",
   },
   {
-    group: "Global",
-    label: "Editor font size",
-    desc: "Bigger / smaller / reset editor text.",
+    group: "shortcuts.group.global",
+    labelKey: "shortcuts.fixed.editorFontSize.label",
+    descKey: "shortcuts.fixed.editorFontSize.desc",
     keys: "Mod-= / Mod-- / Mod-0",
   },
   {
-    group: "Global",
-    label: "UI zoom",
-    desc: "Zoom the whole app in / out / reset.",
+    group: "shortcuts.group.global",
+    labelKey: "shortcuts.fixed.uiZoom.label",
+    descKey: "shortcuts.fixed.uiZoom.desc",
     keys: "Mod-Shift-= / Mod-Shift-- / Mod-Shift-0",
   },
   {
-    group: "Editor",
-    label: "Command palette from Helix",
-    desc: "In Helix normal mode, : opens the command palette; :q, :w, :wq and :<line> work as aliases.",
+    group: "shortcuts.group.editor",
+    labelKey: "shortcuts.fixed.helixPalette.label",
+    descKey: "shortcuts.fixed.helixPalette.desc",
     keys: ":",
   },
   {
-    group: "Editor",
-    label: "Save",
-    desc: "Write the current file to disk.",
+    group: "shortcuts.group.editor",
+    labelKey: "shortcuts.fixed.save.label",
+    descKey: "shortcuts.fixed.save.desc",
     keys: "Mod-s",
   },
   {
-    group: "Editor",
-    label: "Find / replace",
-    desc: "Search within the current file.",
+    group: "shortcuts.group.editor",
+    labelKey: "shortcuts.fixed.findReplace.label",
+    descKey: "shortcuts.fixed.findReplace.desc",
     keys: "Mod-f",
   },
   {
-    group: "Editor",
-    label: "Task date / repeat autocomplete",
-    desc: "Type @due, @today, @repeat (or 📅 / 🔁) on a task line to pick a date or rule.",
+    group: "shortcuts.group.editor",
+    labelKey: "shortcuts.fixed.taskAutocomplete.label",
+    descKey: "shortcuts.fixed.taskAutocomplete.desc",
     keys: "@",
   },
   {
-    group: "Editor",
-    label: "Paste image",
-    desc: "Paste or drop an image to save it under attachments/ and link it.",
+    group: "shortcuts.group.editor",
+    labelKey: "shortcuts.fixed.pasteImage.label",
+    descKey: "shortcuts.fixed.pasteImage.desc",
     keys: "Mod-v",
   },
   {
-    group: "Editor",
-    label: "Follow link",
-    desc: "Open the [[wikilink]] or Markdown link under the cursor.",
+    group: "shortcuts.group.editor",
+    labelKey: "shortcuts.fixed.followLink.label",
+    descKey: "shortcuts.fixed.followLink.desc",
     keys: "Click",
+    keysKey: "shortcuts.fixed.followLink.keys",
   },
   {
-    group: "File explorer",
-    label: "Navigate",
-    desc: "Move selection, expand/collapse folders.",
+    group: "shortcuts.group.explorer",
+    labelKey: "shortcuts.fixed.explorerNavigate.label",
+    descKey: "shortcuts.fixed.explorerNavigate.desc",
     keys: "↑ ↓ ← →",
   },
   {
-    group: "File explorer",
-    label: "Open / toggle folder",
-    desc: "Open the selected file or expand/collapse the folder.",
+    group: "shortcuts.group.explorer",
+    labelKey: "shortcuts.fixed.explorerOpen.label",
+    descKey: "shortcuts.fixed.explorerOpen.desc",
     keys: "Enter",
   },
   {
-    group: "File explorer",
-    label: "Rename",
-    desc: "Rename the selected entry.",
+    group: "shortcuts.group.explorer",
+    labelKey: "shortcuts.fixed.explorerRename.label",
+    descKey: "shortcuts.fixed.explorerRename.desc",
     keys: "F2",
   },
   {
-    group: "File explorer",
-    label: "Delete",
-    desc: "Delete the selected entry (asks for confirmation).",
+    group: "shortcuts.group.explorer",
+    labelKey: "shortcuts.fixed.explorerDelete.label",
+    descKey: "shortcuts.fixed.explorerDelete.desc",
     keys: "Delete / Backspace",
   },
   {
-    group: "File explorer",
-    label: "Type-ahead",
-    desc: "Type a name prefix to jump to the matching entry.",
+    group: "shortcuts.group.explorer",
+    labelKey: "shortcuts.fixed.explorerTypeAhead.label",
+    descKey: "shortcuts.fixed.explorerTypeAhead.desc",
     keys: "a–z",
   },
   {
-    group: "File explorer",
-    label: "Context menu",
-    desc: "New file/folder, rename, delete.",
+    group: "shortcuts.group.explorer",
+    labelKey: "shortcuts.fixed.explorerMenu.label",
+    descKey: "shortcuts.fixed.explorerMenu.desc",
     keys: "Right-click",
+    keysKey: "shortcuts.fixed.explorerMenu.keys",
   },
   {
-    group: "Tabs",
-    label: "Tab menu",
-    desc: "Close, close others, close all.",
+    group: "shortcuts.group.tabs",
+    labelKey: "shortcuts.fixed.tabMenu.label",
+    descKey: "shortcuts.fixed.tabMenu.desc",
     keys: "Right-click",
+    keysKey: "shortcuts.fixed.tabMenu.keys",
   },
 ];
 

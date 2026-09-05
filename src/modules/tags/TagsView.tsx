@@ -1,5 +1,6 @@
 import { ContextMenu } from "@/lib/ContextMenu";
 import { fileRowMenuItems } from "@/lib/fileRowMenu";
+import { useI18n } from "@/lib/i18n";
 import { useContextMenu } from "@/lib/useContextMenu";
 import { Hash } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -48,6 +49,7 @@ export function TagsView({
   selectedTag,
   selectedTagToken,
 }: Props) {
+  const { t } = useI18n();
   const { state } = useTagIndex(rootPath);
   const [active, setActive] = useState<string | null>(null);
   const fileMenu = useContextMenu<string>();
@@ -64,22 +66,22 @@ export function TagsView({
   );
 
   if (!rootPath) {
-    return <div className="tags-empty">Open a folder to see tags</div>;
+    return <div className="tags-empty">{t("tags.openFolder")}</div>;
   }
 
   return (
     <div className="tags-view">
       <div className="tags-list">
         {state.status === "loading" && (
-          <div className="tags-status">Scanning…</div>
+          <div className="tags-status">{t("common.scanning")}</div>
         )}
         {state.status === "error" && (
           <div className="tags-status tags-status-error">{state.message}</div>
         )}
         {state.status === "loaded" && entries.length === 0 && (
           <div className="tags-status">
-            No tags yet. Use <code>#tag</code> in a note or a frontmatter{" "}
-            <code>tags:</code> list.
+            {t("tags.noTagsPrefix")} <code>#tag</code> {t("tags.noTagsMid")}{" "}
+            <code>tags:</code> {t("tags.noTagsSuffix")}
           </div>
         )}
         {entries.map((entry) => (
@@ -93,7 +95,7 @@ export function TagsView({
       </div>
       <div className="tags-files">
         {!activeEntry && (
-          <div className="tags-status">Select a tag to see its notes.</div>
+          <div className="tags-status">{t("tags.selectTag")}</div>
         )}
         {activeEntry?.files.map((file) => (
           <button

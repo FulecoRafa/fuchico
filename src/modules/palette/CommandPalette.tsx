@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { fuzzyMatch } from "@/modules/editor/lib/fuzzyMatch";
 import { formatBinding } from "@/modules/settings/lib/fixedShortcuts";
 import { Command as CommandIcon } from "lucide-react";
@@ -28,10 +29,12 @@ export function CommandPalette({
   onGoToLine,
   onClose,
 }: Props) {
+  const { t, locale } = useI18n();
   const [query, setQuery] = useState(initialQuery ?? "");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `t` is a stable module-level function that reads the locale; `locale` stands in for it so results re-rank when the language changes
   const results: Ranked[] = useMemo(() => {
     const q = query.trim();
     if (!q) {
@@ -48,7 +51,7 @@ export function CommandPalette({
         ranked.push({
           command: {
             id: "go-to-line",
-            title: `Go to Line ${line}`,
+            title: t("command.goToLine", { n: line }),
             run: () => onGoToLine(line),
           },
           indices: [],
@@ -104,7 +107,7 @@ export function CommandPalette({
     }
     ranked.sort((a, b) => b.score - a.score);
     return ranked;
-  }, [commands, query, onGoToLine]);
+  }, [commands, query, onGoToLine, locale]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset selection whenever the filtered result set changes
   useEffect(() => {
@@ -133,7 +136,7 @@ export function CommandPalette({
           ref={inputRef}
           className="palette-overlay-input"
           type="text"
-          placeholder="Run a command…"
+          placeholder={t("palette.runCommand")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -155,7 +158,9 @@ export function CommandPalette({
         />
         <div className="palette-overlay-list">
           {results.length === 0 && (
-            <div className="palette-overlay-empty">No matching commands</div>
+            <div className="palette-overlay-empty">
+              {t("palette.noMatchingCommands")}
+            </div>
           )}
           {results.map((r, i) => (
             <button
