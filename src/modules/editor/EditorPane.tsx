@@ -67,6 +67,9 @@ export type EditorPaneHandle = {
   focus: () => void;
   /** Run a rebindable editor action (same set as Settings › Shortcuts). */
   runAction: (action: ShortcutAction) => void;
+  save: () => void;
+  /** Select and scroll to a 1-based line (`:42` in the command palette). */
+  goToLine: (line: number) => void;
   undo: () => void;
   redo: () => void;
 };
@@ -96,6 +99,10 @@ type Props = {
   /** Vault root; pasted/dropped images are saved under `<root>/attachments`.
    * Read via a ref. */
   rootPath?: string | null;
+  /** When set, `:` in Helix normal/select mode opens the app command
+   * palette (Zed-style) with this query instead of the built-in helix
+   * command line. */
+  onOpenCommandPalette?: (query: string) => void;
 };
 
 const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "ico"];
@@ -121,6 +128,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       getAllTags,
       onTagClick,
       rootPath,
+      onOpenCommandPalette,
     } = props;
     const { doc, onChange, save, reload } = useDocument({
       path,
@@ -149,6 +157,30 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     const setHelixModeRef = useRef(setHelixMode);
     setHelixModeRef.current = setHelixMode;
     const [outlineOpen, setOutlineOpen] = useState(false);
+    const helixModeRef = useRef(helixMode);
+    helixModeRef.current = helixMode;
+    const onOpenCommandPaletteRef = useRef(onOpenCommandPalette);
+    onOpenCommandPaletteRef.current = onOpenCommandPalette;
+    // `:` in Helix normal/select mode opens the command palette (Zed-style).
+    // Window capture phase so it wins over codemirror-helix's own handler;
+    // restricted to the content DOM so the `/` search input keeps its `:`.
+    useEffect(() => {
+      const onKeyDown = (e: KeyboardEvent) => {
+        if (e.key !== ":" || e.metaKey || e.ctrlKey || e.altKey) return;
+        if (!onOpenCommandPaletteRef.current) return;
+        if (editorSettingsStore.get().keybindingMode !== "helix") return;
+        if (helixModeRef.current === "insert") return;
+        const view = cmRef.current?.view;
+        if (!view) return;
+        if (!(e.target instanceof Node) || !view.contentDOM.contains(e.target))
+          return;
+        e.preventDefault();
+        e.stopPropagation();
+        onOpenCommandPaletteRef.current(":");
+      };
+      window.addEventListener("keydown", onKeyDown, true);
+      return () => window.removeEventListener("keydown", onKeyDown, true);
+    }, []);
     const [docStats, setDocStats] = useState<DocStats>({
       words: 0,
       readingTimeMin: 0,
@@ -403,6 +435,20 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           );
           view.focus();
           commands[action](view);
+        },
+        save: () => {
+          void performSaveRef.current();
+        },
+        goToLine: (line) => {
+          const view = cmRef.current?.view;
+          if (!view) return;
+          const clamped = Math.max(1, Math.min(line, view.state.doc.lines));
+          const pos = view.state.doc.line(clamped).from;
+          view.dispatch({
+            selection: { anchor: pos },
+            effects: EditorView.scrollIntoView(pos, { y: "center" }),
+          });
+          view.focus();
         },
         undo: () => {
           const view = cmRef.current?.view;

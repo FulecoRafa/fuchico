@@ -33,6 +33,12 @@ export const FIXED_SHORTCUTS: {
   },
   {
     group: "Editor",
+    label: "Command palette from Helix",
+    desc: "In Helix normal mode, : opens the command palette; :q, :w, :wq and :<line> work as aliases.",
+    keys: ":",
+  },
+  {
+    group: "Editor",
     label: "Save",
     desc: "Write the current file to disk.",
     keys: "Mod-s",

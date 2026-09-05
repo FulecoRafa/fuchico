@@ -23,6 +23,10 @@ export type AppCommand = {
   /** Key binding hint shown right-aligned in the palette row (raw
    * "Mod-Shift-p" form; formatted per platform at render time). */
   binding?: string;
+  /** Helix/vim-style `:` aliases (":q", ":w"). Matched (prefix) when the
+   * palette query starts with ":", e.g. after pressing `:` in Helix normal
+   * mode, and shown as a chip on the row. */
+  aliases?: string[];
   run: () => void;
 };
 
@@ -46,6 +50,8 @@ export type CommandContext = {
   runEditorAction: (action: ShortcutAction) => void;
   /** Detaches the active tab into its own OS window (issue #29). */
   openActiveInNewWindow: () => void;
+  /** Saves the active editor tab (palette "Save File" / `:w`). */
+  saveActiveFile: () => void;
 };
 
 function toggleThemeCommand(): AppCommand {
@@ -53,6 +59,7 @@ function toggleThemeCommand(): AppCommand {
     id: "toggle-theme",
     title: "Toggle Theme (Light / Dark)",
     keywords: ["dark mode", "light mode", "appearance", "color scheme"],
+    aliases: [":theme"],
     run: () => {
       const { mode } = editorSettingsStore.get();
       const next = mode === "dark" ? "light" : "dark";
@@ -122,17 +129,39 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
       title: "Quick Open: Go to File…",
       keywords: ["switcher", "find file", "open file"],
       binding: "Mod-p",
+      aliases: [":o", ":open", ":e", ":edit"],
       run: () => ctx.openQuickSwitcher(),
     });
   }
 
   if (ctx.hasActiveTab) {
-    commands.push({
-      id: "close-active-tab",
-      title: "Close Active Tab",
-      keywords: ["close file"],
-      run: () => ctx.closeActiveTab(),
-    });
+    commands.push(
+      {
+        id: "save-file",
+        title: "Save File",
+        keywords: ["write"],
+        binding: "Mod-s",
+        aliases: [":w", ":write"],
+        run: () => ctx.saveActiveFile(),
+      },
+      {
+        id: "save-and-close",
+        title: "Save and Close Tab",
+        keywords: ["write quit"],
+        aliases: [":wq", ":x"],
+        run: () => {
+          ctx.saveActiveFile();
+          ctx.closeActiveTab();
+        },
+      },
+      {
+        id: "close-active-tab",
+        title: "Close Active Tab",
+        keywords: ["close file"],
+        aliases: [":q", ":quit", ":bc"],
+        run: () => ctx.closeActiveTab(),
+      },
+    );
   }
 
   if (ctx.hasOpenTabs) {
@@ -140,6 +169,7 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
       id: "close-all-tabs",
       title: "Close All Tabs",
       keywords: ["close everything"],
+      aliases: [":qa"],
       run: () => ctx.closeAllTabs(),
     });
   }

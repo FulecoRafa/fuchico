@@ -95,6 +95,7 @@ function App() {
   const [mermaidDock, setMermaidDock] = useState<MermaidDock | null>(null);
   const [quickSwitcherOpen, setQuickSwitcherOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [paletteQuery, setPaletteQuery] = useState("");
   const dockPanelRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<EditorPaneHandle>(null);
   const dockWidthRef = useRef(DEFAULT_DOCK_WIDTH);
@@ -213,9 +214,14 @@ function App() {
 
   const activeTab = tabs.find((t) => t.path === activePath) ?? null;
 
+  const openCommandPalette = useCallback((query = "") => {
+    setPaletteQuery(query);
+    setCommandPaletteOpen(true);
+  }, []);
+
   usePaletteShortcuts({
     onOpenQuickSwitcher: () => setQuickSwitcherOpen(true),
-    onOpenCommandPalette: () => setCommandPaletteOpen(true),
+    onOpenCommandPalette: () => openCommandPalette(),
   });
 
   const commands = useMemo(
@@ -235,6 +241,7 @@ function App() {
         vaultFiles,
         openFile: (path) => openFile(path),
         runEditorAction: (action) => editorRef.current?.runAction(action),
+        saveActiveFile: () => editorRef.current?.save(),
         openActiveInNewWindow: () => {
           if (activePath) openInWindow(activePath);
         },
@@ -393,6 +400,7 @@ function App() {
                   ) : (
                     <EditorPane
                       ref={editorRef}
+                      onOpenCommandPalette={openCommandPalette}
                       key={activeTab.path}
                       path={activeTab.path}
                       focusLine={activeTab.focusLine}
@@ -452,6 +460,8 @@ function App() {
       {commandPaletteOpen && (
         <CommandPalette
           commands={commands}
+          initialQuery={paletteQuery}
+          onGoToLine={(line) => editorRef.current?.goToLine(line)}
           onClose={() => setCommandPaletteOpen(false)}
         />
       )}

@@ -1923,6 +1923,19 @@ input {
   white-space: nowrap;
 }
 
+.palette-overlay-alias {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+.palette-overlay-alias + .palette-overlay-keys {
+  margin-left: 0;
+}
+
 .palette-overlay-keys {
   flex-shrink: 0;
   margin-left: auto;
@@ -1945,6 +1958,43 @@ input {
   background: color-mix(in oklch, var(--syntax-number) 35%, transparent);
   color: inherit;
   border-radius: 2px;
+}
+
+/* ── codemirror-helix command/search panel ──────────────────────────────────
+   The package styles these with background/color: inherit on purpose, and our
+   helixModeReporterExtension forces the shared .cm-panels-bottom wrapper
+   transparent (to hide the stray empty bar) — so without explicit colors the
+   `/` search line renders see-through over the document text. */
+
+.cm-editor .cm-hx-command-panel {
+  background: var(--secondary) !important;
+  color: var(--foreground) !important;
+  border-top: 1px solid var(--border) !important;
+  padding: 3px 8px;
+  font-size: 12px;
+}
+
+.cm-editor .cm-hx-command-input {
+  background: transparent !important;
+  color: var(--foreground) !important;
+  caret-color: var(--foreground);
+}
+
+.cm-editor .cm-hx-command-popup {
+  background: var(--secondary) !important;
+  color: var(--foreground) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+}
+
+.cm-editor .cm-hx-command-help {
+  border-color: var(--border) !important;
+}
+
+.cm-editor .cm-hx-selected-option {
+  background: var(--accent) !important;
+  color: var(--accent-foreground) !important;
 }
 
 /* ── Custom fold regions (:::fold / :::endfold) ─────────────────────────── */
