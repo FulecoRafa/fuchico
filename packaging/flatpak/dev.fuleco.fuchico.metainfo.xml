@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.fuleco.fuchico</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Fuchico</name>
+  <summary>Notes editor with Helix modal editing</summary>
+  <description>
+    <p>Fuchico is a standalone desktop notes editor. Your notes stay as plain markdown files on disk, edited with real Helix keybindings, with live preview, tasks, tags, backlinks and CalDAV sync.</p>
+  </description>
+  <launchable type="desktop-id">dev.fuleco.fuchico.desktop</launchable>
+  <url type="homepage">https://github.com/FulecoRafa/fuchico</url>
+  <url type="bugtracker">https://github.com/FulecoRafa/fuchico/issues</url>
+  <developer id="dev.fuleco"><name>FulecoRafa</name></developer>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.1.0" date="2026-09-07" />
+  </releases>
+</component>

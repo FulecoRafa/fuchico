@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+PackageIdentifier: FulecoRafa.Fuchico
+PackageVersion: 0.1.0
+PackageLocale: en-US
+Publisher: FulecoRafa
+PublisherUrl: https://github.com/FulecoRafa
+PublisherSupportUrl: https://github.com/FulecoRafa/fuchico/issues
+PackageName: Fuchico
+PackageUrl: https://github.com/FulecoRafa/fuchico
+License: MIT
+LicenseUrl: https://github.com/FulecoRafa/fuchico/blob/main/LICENSE
+ShortDescription: Notes editor with Helix modal editing
+Description: Fuchico is a standalone desktop notes editor. Plain markdown files on disk, edited with real Helix keybindings, with live preview, tasks, tags, backlinks and CalDAV sync.
+Tags:
+  - markdown
+  - notes
+  - helix
+  - editor
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

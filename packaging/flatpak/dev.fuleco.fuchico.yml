@@ -1,0 +1,41 @@
+# Flatpak manifest for Fuchico (issue #37). Repackages the .deb produced by
+# the Release workflow, the approach Tauri documents for Flathub. To submit
+# to Flathub, copy this file plus the .metainfo.xml and .desktop next to it
+# into a fork of github.com/flathub/flathub and open the "new app" PR.
+#
+# Local test:
+#   flatpak install flathub org.gnome.Platform//47 org.gnome.Sdk//47
+#   flatpak-builder --user --install --force-clean build-dir dev.fuleco.fuchico.yml
+#   flatpak run dev.fuleco.fuchico
+id: dev.fuleco.fuchico
+runtime: org.gnome.Platform
+runtime-version: "47"
+sdk: org.gnome.Sdk
+command: fuchico
+finish-args:
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --share=ipc
+  - --share=network        # CalDAV sync
+  - --filesystem=home      # vaults are plain folders anywhere under $HOME
+  - --talk-name=org.freedesktop.secrets   # CalDAV credentials via keyring
+modules:
+  - name: fuchico
+    buildsystem: simple
+    build-commands:
+      - ar -x fuchico.deb
+      - tar -xf data.tar.gz
+      - install -Dm755 usr/bin/fuchico /app/bin/fuchico
+      - install -Dm644 usr/share/applications/Fuchico.desktop /app/share/applications/dev.fuleco.fuchico.desktop
+      - sed -i 's/^Icon=.*/Icon=dev.fuleco.fuchico/' /app/share/applications/dev.fuleco.fuchico.desktop
+      - for s in 32x32 128x128 256x256@2; do install -Dm644 "usr/share/icons/hicolor/$s/apps/fuchico.png" "/app/share/icons/hicolor/${s%@2}/apps/dev.fuleco.fuchico.png" || true; done
+      - install -Dm644 dev.fuleco.fuchico.metainfo.xml /app/share/metainfo/dev.fuleco.fuchico.metainfo.xml
+    sources:
+      - type: file
+        path: dev.fuleco.fuchico.metainfo.xml
+      - type: file
+        dest-filename: fuchico.deb
+        # Replace with the real asset URL and sha256 for the release being packaged.
+        url: https://github.com/FulecoRafa/fuchico/releases/download/v0.1.0/Fuchico_0.1.0_amd64.deb
+        sha256: REPLACE_WITH_SHA256
