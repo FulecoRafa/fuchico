@@ -51,6 +51,7 @@ import {
   mermaidPreviewExtension,
 } from "./lib/mermaidPreviewExtension";
 import { pathDropExtension } from "./lib/pathDrop";
+import { rulersCompartment, rulersExtension } from "./lib/rulers";
 import { scrollPersistenceExtension } from "./lib/scrollPositions";
 import { buildShortcutCommands, shortcutsExtension } from "./lib/shortcuts";
 import { tagCompletionProvider, tagsExtension } from "./lib/tags";
@@ -70,6 +71,8 @@ export type EditorPaneHandle = {
   save: () => void;
   /** Select and scroll to a 1-based line (`:42` in the command palette). */
   goToLine: (line: number) => void;
+  /** Current buffer text (unsaved edits included), for export (#28). */
+  getContent: () => string | null;
   undo: () => void;
   redo: () => void;
 };
@@ -193,6 +196,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     const initialKeybindingModeRef = useRef(settings.keybindingMode);
     const initialRelativeLineNumbersRef = useRef(settings.relativeLineNumbers);
     const initialTabSizeRef = useRef(settings.tabSize);
+    const initialRulersRef = useRef(settings.rulers);
 
     // Stabilize save/onSaved/onClose via refs so `extensions` never changes
     // identity — a new identity makes @uiw/react-codemirror reconfigure the
@@ -248,6 +252,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           lineNumbersExtensionFor(initialRelativeLineNumbersRef.current),
         ),
         indentCompartment.of(indentExtensionFor(initialTabSizeRef.current)),
+        rulersCompartment.of(rulersExtension(initialRulersRef.current)),
         keybindingCompartment.of(
           keybindingExtensionFor(initialKeybindingModeRef.current),
         ),
@@ -356,6 +361,16 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       const view = cmRef.current?.view;
       if (!view) return;
       view.dispatch({
+        effects: rulersCompartment.reconfigure(
+          rulersExtension(settings.rulers),
+        ),
+      });
+    }, [settings.rulers]);
+
+    useEffect(() => {
+      const view = cmRef.current?.view;
+      if (!view) return;
+      view.dispatch({
         effects: shortcutsCompartment.reconfigure(
           shortcutsExtension(
             settings.shortcuts,
@@ -450,6 +465,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           });
           view.focus();
         },
+        getContent: () => cmRef.current?.view?.state.doc.toString() ?? null,
         undo: () => {
           const view = cmRef.current?.view;
           if (view) undo(view);

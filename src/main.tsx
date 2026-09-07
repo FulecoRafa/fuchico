@@ -7,12 +7,18 @@ const params = new URLSearchParams(window.location.search);
 const mermaidBlockKey = params.get("mermaidBlockKey");
 const editorWindowPath =
   params.get("window") === "editor" ? params.get("path") : null;
+const printKey = params.get("window") === "print" ? params.get("key") : null;
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement,
 );
 
-if (mermaidBlockKey) {
+if (printKey) {
+  // Print/PDF preview window (issue #28): plain document, no React.
+  void import("@/modules/export/PrintWindow").then((m) =>
+    m.mountPrintWindow(printKey),
+  );
+} else if (mermaidBlockKey) {
   // Popped-out diagram window: load only the mermaid module, not the whole app.
   const MermaidWindowApp = lazy(() =>
     import("@/modules/mermaid").then((m) => ({ default: m.MermaidWindowApp })),

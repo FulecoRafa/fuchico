@@ -1,4 +1,6 @@
 import { useI18n } from "@/lib/i18n";
+import { formatRulers, parseRulers } from "@/modules/editor/lib/rulers";
+import { useState } from "react";
 import { useEditorSettings } from "./lib/editorSettings";
 
 const TAB_SIZES = [2, 4, 8] as const;
@@ -6,6 +8,16 @@ const TAB_SIZES = [2, 4, 8] as const;
 export function EditorBehaviorSection() {
   const { t } = useI18n();
   const { settings, setSettings } = useEditorSettings();
+  const [rulersDraft, setRulersDraft] = useState(() =>
+    formatRulers(settings.rulers),
+  );
+  const commitRulers = () => {
+    const next = parseRulers(rulersDraft);
+    setRulersDraft(formatRulers(next));
+    if (formatRulers(next) !== formatRulers(settings.rulers)) {
+      setSettings({ rulers: next });
+    }
+  };
 
   return (
     <div className="settings-section">
@@ -59,6 +71,27 @@ export function EditorBehaviorSection() {
           </div>
           <span className="settings-hint">
             {t("settings.behavior.tabSizeHint")}
+          </span>
+        </div>
+
+        <div className="settings-field">
+          <span className="settings-label">
+            {t("settings.behavior.rulers")}
+          </span>
+          <input
+            type="text"
+            className="settings-input"
+            placeholder="80, 120"
+            spellCheck={false}
+            value={rulersDraft}
+            onChange={(e) => setRulersDraft(e.target.value)}
+            onBlur={commitRulers}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitRulers();
+            }}
+          />
+          <span className="settings-hint">
+            {t("settings.behavior.rulersHint")}
           </span>
         </div>
       </div>

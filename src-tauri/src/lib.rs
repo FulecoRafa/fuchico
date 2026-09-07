@@ -6,6 +6,7 @@ use std::time::Duration;
 use modules::caldav::commands as caldav;
 use modules::fonts;
 use modules::fs::{file, mutate, tree};
+use modules::links;
 use modules::search;
 use modules::tags;
 use modules::tasks;
@@ -22,12 +23,22 @@ struct FileWrittenPayload {
     source: Option<String>,
 }
 
+/// Opens the OS print dialog for the calling window (issue #28); "Save as
+/// PDF" lives there on every platform.
+#[tauri::command]
+fn export_print(window: tauri::WebviewWindow) -> Result<(), String> {
+    window.print().map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_log::Builder::new().build())
+        // Remembers size/position per window label -- main, editor-*, mermaid-*
+        // (issue #29).
+        .plugin(tauri_plugin_window_state::Builder::new().build())
         .setup(|app| {
             let debounce_state: caldav::DebounceState = Arc::new(Mutex::new(Default::default()));
 
@@ -81,6 +92,8 @@ pub fn run() {
             tasks::tasks_scan,
             tasks::tasks_toggle,
             tags::tags_scan,
+            links::links_scan,
+            export_print,
             search::search_files,
             search::search_replace_files,
             caldav::caldav_test_connection,

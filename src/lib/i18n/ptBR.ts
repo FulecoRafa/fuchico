@@ -85,7 +85,19 @@ export const ptBR: Record<MessageKey, string> = {
   "command.openInNewWindow": "Abrir em nova janela",
   "command.toggleTheme": "Alternar tema (claro / escuro)",
   "command.saveFile": "Salvar arquivo",
-  "command.saveAndCloseTab": "Salvar e fechar a aba",
+  "command.saveAndCloseTab": "Salvar e fechar aba",
+  "command.showBacklinks": "Mostrar backlinks",
+  "command.hideBacklinks": "Ocultar backlinks",
+  "command.exportHtml": "Exportar como HTML…",
+  "command.exportPdf": "Exportar como PDF (imprimir)…",
+  "backlinks.title": "Backlinks",
+  "backlinks.noFile": "Abra uma nota para ver quais notas apontam para ela.",
+  "backlinks.empty": 'Nenhuma nota aponta para "{name}" ainda.',
+  "export.saved": "Exportado para {path}",
+  "export.failed": "Falha ao exportar: {message}",
+  "export.print": "Imprimir / Salvar como PDF",
+  "export.printHint":
+    "Use a caixa de diálogo de impressão para salvar esta nota como PDF.",
   "command.goToLine": "Ir para a linha {n}",
 
   // Search panel
@@ -169,6 +181,46 @@ export const ptBR: Record<MessageKey, string> = {
     "As declarações são injetadas como estão na regra",
   "settings.theme.customCssHintSuffix":
     "do tema. A pré-visualização atualiza enquanto você digita; clique em Aplicar para usar no aplicativo inteiro.",
+  "settings.theme.autocompleteHint":
+    "Digite -- para autocompletar as variáveis de tema do app.",
+  "settings.theme.newTheme": "Novo tema",
+  "settings.theme.newThemeName": "Meu tema",
+  "settings.theme.importTheme": "Importar…",
+  "settings.theme.exportTheme": "Exportar…",
+  "settings.theme.duplicate": "Duplicar",
+  "settings.theme.themeName": "Nome do tema",
+  "settings.theme.deleteConfirm": 'Excluir o tema "{name}"?',
+  "settings.theme.exported": "Tema exportado.",
+  "settings.theme.imported": "Tema importado.",
+  "settings.theme.importFailed": "Não foi possível ler esse arquivo como tema.",
+  "command.selectTheme": "Tema: {name}",
+
+  // Descrições das variáveis de tema (autocomplete do editor de temas)
+  "themeVar.background": "Fundo do app",
+  "themeVar.foreground": "Cor de texto padrão",
+  "themeVar.card": "Painéis, barras laterais, barra de status",
+  "themeVar.cardForeground": "Texto em painéis",
+  "themeVar.primary": "Botões primários e seleção",
+  "themeVar.primaryForeground": "Texto sobre o primário",
+  "themeVar.secondary": "Botões secundários e chips",
+  "themeVar.secondaryForeground": "Texto sobre o secundário",
+  "themeVar.muted": "Fundos sutis",
+  "themeVar.mutedForeground": "Texto secundário/esmaecido",
+  "themeVar.accent": "Destaques de hover e ativo",
+  "themeVar.accentForeground": "Texto sobre o destaque",
+  "themeVar.destructive": "Erros e ações destrutivas",
+  "themeVar.border": "Bordas e separadores",
+  "themeVar.input": "Bordas de campos",
+  "themeVar.ring": "Anel de foco",
+  "themeVar.syntaxKeyword": "Sintaxe: palavras-chave, títulos",
+  "themeVar.syntaxString": "Sintaxe: strings",
+  "themeVar.syntaxNumber": "Sintaxe: números",
+  "themeVar.syntaxFunction": "Sintaxe: funções, links",
+  "themeVar.syntaxType": "Sintaxe: tipos, tags",
+  "themeVar.syntaxComment": "Sintaxe: comentários",
+  "themeVar.radius": "Raio base dos cantos (ex.: 0.625rem)",
+  "themeVar.fontSans": "Fonte da interface",
+  "themeVar.fontMono": "Fonte do editor",
 
   // Settings shared preview card
   "settings.preview.primary": "Primário",
@@ -218,6 +270,9 @@ export const ptBR: Record<MessageKey, string> = {
   "settings.behavior.tabSize": "Tamanho da tabulação",
   "settings.behavior.tabSizeHint":
     "Espaços por nível de indentação e por parada de tabulação.",
+  "settings.behavior.rulers": "Réguas verticais",
+  "settings.behavior.rulersHint":
+    "Colunas separadas por vírgula onde uma linha-guia é desenhada (ex.: 80, 120). Vazio = nenhuma.",
 
   // Settings › Fold regions
   "settings.folding.title": "Regiões dobráveis",

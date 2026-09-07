@@ -2575,3 +2575,162 @@ input {
   color: inherit;
   cursor: pointer;
 }
+
+/* Vertical rulers (issue #18): guide lines at configurable columns. */
+.cm-rulers {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cm-ruler {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: color-mix(in oklch, var(--foreground) 12%, transparent);
+}
+
+/* Custom theme editor (issue #3). */
+.theme-css-editor {
+  font-family: var(--font-mono);
+}
+
+.theme-css-editor .cm-tooltip {
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.theme-css-editor .cm-tooltip-autocomplete ul li {
+  padding: 2px 8px;
+}
+
+.theme-css-editor .cm-tooltip-autocomplete ul li[aria-selected] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.theme-css-editor .cm-completionDetail {
+  color: var(--muted-foreground);
+  font-style: normal;
+  margin-left: 8px;
+}
+
+.theme-css-editor .cm-completionInfo {
+  padding: 6px 8px;
+}
+
+.theme-palette-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.theme-var-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.theme-var-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.btn-danger {
+  color: var(--destructive);
+}
+
+/* Backlinks dock panel (issue #21). */
+.backlinks-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.backlinks-count {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.backlinks-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px 0;
+  font-size: 12px;
+}
+
+.backlinks-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--muted-foreground);
+}
+
+.backlinks-group {
+  padding: 4px 0;
+}
+
+.backlinks-file,
+.backlinks-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.backlinks-file {
+  padding: 4px 12px;
+  font-weight: 600;
+}
+
+.backlinks-row {
+  padding: 3px 12px 3px 30px;
+  color: var(--muted-foreground);
+}
+
+.backlinks-file:hover,
+.backlinks-row:hover {
+  background: color-mix(in oklch, var(--accent) 60%, transparent);
+  color: var(--accent-foreground);
+}
+
+.backlinks-line {
+  flex-shrink: 0;
+  min-width: 2ch;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.backlinks-context {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
