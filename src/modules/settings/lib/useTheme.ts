@@ -1,6 +1,6 @@
 import { usePrefersDark } from "@/lib/usePrefersDark";
 import { useEffect } from "react";
-import { useEditorSettings } from "./editorSettings";
+import { activeCustomTheme, useEditorSettings } from "./editorSettings";
 
 const CUSTOM_STYLE_ID = "fuchico-custom-theme";
 
@@ -36,9 +36,10 @@ export function useTheme() {
     document.documentElement.dataset.mode = resolvedMode;
   }, [settings.palette, settings.mode, prefersDark]);
 
+  const customCss = activeCustomTheme(settings)?.css ?? "";
   useEffect(() => {
-    applyCustomThemeCss(settings.customThemeCss);
-  }, [settings.customThemeCss]);
+    applyCustomThemeCss(customCss);
+  }, [customCss]);
 
   useEffect(() => {
     if (settings.uiFont.trim()) {

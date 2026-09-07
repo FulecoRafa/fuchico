@@ -36,6 +36,7 @@ chrono = { version = "0.4.45", features = ["serde"] }
 tokio = { version = "1.53.0", features = ["time", "rt", "macros"] }
 font-kit = "0.14"
 base64 = "0.22"
+tauri-plugin-window-state = "2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 keyring-core = "1.0.0"

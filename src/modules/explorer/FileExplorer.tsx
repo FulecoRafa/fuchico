@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { externalFiles, importFiles } from "./lib/importFiles";
-import { dirname, useFileTree } from "./lib/useFileTree";
+import { dirname, notifyFsChanged, useFileTree } from "./lib/useFileTree";
 import {
   EntryRow,
   PendingRow,
@@ -831,7 +831,11 @@ export function FileExplorer({
           type="button"
           className="explorer-header-btn"
           title={t("explorer.refresh")}
-          onClick={() => tree.refresh(rootPath)}
+          onClick={() => {
+            tree.refresh(rootPath);
+            // Also re-index wikilinks/backlinks for files created outside the app.
+            notifyFsChanged(rootPath);
+          }}
         >
           <RefreshCw size={14} strokeWidth={1.75} />
         </button>

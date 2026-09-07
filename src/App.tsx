@@ -1,6 +1,7 @@
 import { openEditorWindow } from "@/lib/editorWindow";
 import { t, useLocale } from "@/lib/i18n";
 import { AgendaView } from "@/modules/agenda";
+import { BacklinksPane } from "@/modules/backlinks";
 import {
   EditorPane,
   type EditorPaneHandle,
@@ -57,7 +58,9 @@ const DEFAULT_DOCK_WIDTH = 380;
 
 type MainView = "editor" | "agenda" | "search" | "tags" | "settings";
 
-type MermaidDock = { blockKey: string; label: string; initialText?: string };
+type Dock =
+  | { kind: "mermaid"; blockKey: string; label: string; initialText?: string }
+  | { kind: "backlinks" };
 
 function App() {
   useTheme();
@@ -96,7 +99,7 @@ function App() {
     setSelectedTagToken((t) => t + 1);
     setMainView("tags");
   }, []);
-  const [mermaidDock, setMermaidDock] = useState<MermaidDock | null>(null);
+  const [dock, setDock] = useState<Dock | null>(null);
   const [quickSwitcherOpen, setQuickSwitcherOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [paletteQuery, setPaletteQuery] = useState("");
@@ -191,7 +194,8 @@ function App() {
 
   const openMermaid = useCallback(
     (payload: { blockKey: string; text: string }) => {
-      setMermaidDock({
+      setDock({
+        kind: "mermaid",
         blockKey: payload.blockKey,
         label: t("app.diagram"),
         initialText: payload.text,
@@ -208,7 +212,11 @@ function App() {
     void listen<{ blockKey: string; label: string }>(
       "mermaid:dock-request",
       ({ payload }) => {
-        setMermaidDock({ blockKey: payload.blockKey, label: payload.label });
+        setDock({
+          kind: "mermaid",
+          blockKey: payload.blockKey,
+          label: payload.label,
+        });
       },
     ).then((fn) => {
       unlisten = fn;
@@ -217,6 +225,10 @@ function App() {
   }, []);
 
   const activeTab = tabs.find((t) => t.path === activePath) ?? null;
+
+  const toggleBacklinks = useCallback(() => {
+    setDock((d) => (d?.kind === "backlinks" ? null : { kind: "backlinks" }));
+  }, []);
 
   const openCommandPalette = useCallback((query = "") => {
     setPaletteQuery(query);
@@ -250,6 +262,10 @@ function App() {
         openActiveInNewWindow: () => {
           if (activePath) openInWindow(activePath);
         },
+        toggleBacklinks,
+        backlinksOpen: dock?.kind === "backlinks",
+        getActiveContent: () => editorRef.current?.getContent() ?? null,
+        activePath,
         openSettings: (section) => {
           settingsNav.set(section);
           setMainView("settings");
@@ -265,6 +281,8 @@ function App() {
       vaultFiles,
       openFile,
       openInWindow,
+      toggleBacklinks,
+      dock,
       locale,
     ],
   );
@@ -431,7 +449,7 @@ function App() {
               </div>
             )}
           </div>
-          {mermaidDock && (
+          {dock && (
             <>
               <div
                 className="mermaid-dock-resizer"
@@ -444,19 +462,33 @@ function App() {
                 className="mermaid-dock-panel"
                 style={{ width: dockWidthRef.current }}
               >
-                <Suspense
-                  fallback={
-                    <div className="editor-status">{t("common.loading")}</div>
-                  }
-                >
-                  <MermaidPane
-                    key={mermaidDock.blockKey}
-                    blockKey={mermaidDock.blockKey}
-                    label={mermaidDock.label}
-                    initialText={mermaidDock.initialText}
-                    onClose={() => setMermaidDock(null)}
+                {dock.kind === "backlinks" ? (
+                  <BacklinksPane
+                    rootPath={rootPath}
+                    targetPath={
+                      activeTab && !activeTab.path.endsWith(".excalidraw")
+                        ? activeTab.path
+                        : null
+                    }
+                    vaultFiles={vaultFiles}
+                    onOpenFile={openFile}
+                    onClose={() => setDock(null)}
                   />
-                </Suspense>
+                ) : (
+                  <Suspense
+                    fallback={
+                      <div className="editor-status">{t("common.loading")}</div>
+                    }
+                  >
+                    <MermaidPane
+                      key={dock.blockKey}
+                      blockKey={dock.blockKey}
+                      label={dock.label}
+                      initialText={dock.initialText}
+                      onClose={() => setDock(null)}
+                    />
+                  </Suspense>
+                )}
               </div>
             </>
           )}

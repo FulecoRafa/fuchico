@@ -1,6 +1,12 @@
 import { useSyncExternalStore } from "react";
 
-export type Palette = "ayu" | "dracula" | "catppuccin" | "custom";
+export type BuiltinPalette = "ayu" | "dracula" | "catppuccin";
+export type Palette = BuiltinPalette | "custom";
+
+/** A user-defined theme: CSS custom-property declarations injected under
+ * `:root[data-palette="custom"]` while it is the active custom theme
+ * (issue #3). */
+export type CustomTheme = { id: string; name: string; css: string };
 export type ColorMode = "system" | "light" | "dark";
 export type KeybindingMode = "helix" | "vim" | "normal";
 /** UI language setting; "system" resolves via `navigator.language`. */
@@ -24,7 +30,10 @@ export type EditorSettings = {
   language: AppLanguage;
   palette: Palette;
   mode: ColorMode;
-  customThemeCss: string;
+  /** Named custom themes; `customThemeId` picks the one applied while
+   * `palette === "custom"` (issue #3). */
+  customThemes: CustomTheme[];
+  customThemeId: string | null;
   keybindingMode: KeybindingMode;
   shortcuts: Shortcuts;
   foldStartMarker: string;
@@ -38,6 +47,9 @@ export type EditorSettings = {
   relativeLineNumbers: boolean;
   /** Number of spaces per indent level / tab stop. */
   tabSize: number;
+  /** Columns at which a vertical guide line is drawn (issue #18). Empty =
+   * no rulers. */
+  rulers: number[];
   /** Editor content font size in px (Mod +/- adjusts, Mod-0 resets). */
   editorFontSize: number;
   /** Whole-app UI zoom factor (Mod-Shift +/- adjusts, Mod-Shift-0 resets).
@@ -77,7 +89,8 @@ export const DEFAULT_SETTINGS: EditorSettings = {
   language: "system",
   palette: "ayu",
   mode: "system",
-  customThemeCss: "",
+  customThemes: [],
+  customThemeId: null,
   keybindingMode: "helix",
   shortcuts: {
     openOutline: "Mod-o",
@@ -96,6 +109,7 @@ export const DEFAULT_SETTINGS: EditorSettings = {
   editorFont: "",
   relativeLineNumbers: false,
   tabSize: 2,
+  rulers: [],
   editorFontSize: EDITOR_FONT_SIZE_DEFAULT,
   uiScale: UI_SCALE_DEFAULT,
   dailyNotesFolder: "daily",
@@ -103,16 +117,49 @@ export const DEFAULT_SETTINGS: EditorSettings = {
   externalTool: "",
 };
 
+export function newCustomThemeId(): string {
+  return `theme-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+/** The custom theme currently selected, or null when none exists. */
+export function activeCustomTheme(s: EditorSettings): CustomTheme | null {
+  return s.customThemes.find((t) => t.id === s.customThemeId) ?? null;
+}
+
 function load(): EditorSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_SETTINGS;
-    const parsed = JSON.parse(raw) as Partial<EditorSettings>;
-    return {
+    const parsed = JSON.parse(raw) as Partial<EditorSettings> & {
+      /** Pre-#3 single custom theme, migrated into `customThemes`. */
+      customThemeCss?: string;
+    };
+    const { customThemeCss, ...rest } = parsed;
+    const merged: EditorSettings = {
       ...DEFAULT_SETTINGS,
-      ...parsed,
+      ...rest,
       shortcuts: { ...DEFAULT_SETTINGS.shortcuts, ...parsed.shortcuts },
     };
+    if (
+      typeof customThemeCss === "string" &&
+      customThemeCss.trim() &&
+      merged.customThemes.length === 0
+    ) {
+      const theme = {
+        id: newCustomThemeId(),
+        name: "Custom",
+        css: customThemeCss,
+      };
+      merged.customThemes = [theme];
+      merged.customThemeId = theme.id;
+    }
+    if (
+      merged.customThemeId !== null &&
+      !merged.customThemes.some((t) => t.id === merged.customThemeId)
+    ) {
+      merged.customThemeId = merged.customThemes[0]?.id ?? null;
+    }
+    return merged;
   } catch {
     return DEFAULT_SETTINGS;
   }

@@ -1,4 +1,5 @@
 import { t } from "@/lib/i18n";
+import { exportAsHtml, exportAsPdf } from "@/modules/export";
 import {
   editorSettingsStore,
   type ShortcutAction,
@@ -53,7 +54,42 @@ export type CommandContext = {
   openActiveInNewWindow: () => void;
   /** Saves the active editor tab (palette "Save File" / `:w`). */
   saveActiveFile: () => void;
+  /** Shows/hides the backlinks dock panel (issue #21). */
+  toggleBacklinks: () => void;
+  backlinksOpen: boolean;
+  /** Active tab path + live buffer, for export (issue #28). */
+  activePath: string | null;
+  getActiveContent: () => string | null;
 };
+
+const BUILTIN_PALETTES: {
+  value: "ayu" | "dracula" | "catppuccin";
+  label: string;
+}[] = [
+  { value: "ayu", label: "Ayu" },
+  { value: "dracula", label: "Dracula" },
+  { value: "catppuccin", label: "Catppuccin" },
+];
+
+/** One "Theme: X" command per built-in palette and custom theme (issue #3). */
+function selectThemeCommands(): AppCommand[] {
+  const { customThemes } = editorSettingsStore.get();
+  return [
+    ...BUILTIN_PALETTES.map((p) => ({
+      id: `select-theme:${p.value}`,
+      title: t("command.selectTheme", { name: p.label }),
+      keywords: ["palette", "appearance", "color scheme"],
+      run: () => editorSettingsStore.set({ palette: p.value }),
+    })),
+    ...customThemes.map((th) => ({
+      id: `select-theme:${th.id}`,
+      title: t("command.selectTheme", { name: th.name }),
+      keywords: ["palette", "appearance", "custom theme"],
+      run: () =>
+        editorSettingsStore.set({ palette: "custom", customThemeId: th.id }),
+    })),
+  ];
+}
 
 function toggleThemeCommand(): AppCommand {
   return {
@@ -222,7 +258,45 @@ export function buildAppCommands(ctx: CommandContext): AppCommand[] {
     });
   }
 
-  commands.push(toggleThemeCommand());
+  if (ctx.hasRootPath) {
+    commands.push({
+      id: "toggle-backlinks",
+      title: ctx.backlinksOpen
+        ? t("command.hideBacklinks")
+        : t("command.showBacklinks"),
+      keywords: ["links", "references", "linked mentions", "graph"],
+      aliases: [":backlinks", ":bl"],
+      run: ctx.toggleBacklinks,
+    });
+  }
+
+  if (ctx.activePath && /\.(md|markdown)$/i.test(ctx.activePath)) {
+    const path = ctx.activePath;
+    commands.push(
+      {
+        id: "export-html",
+        title: t("command.exportHtml"),
+        keywords: ["export", "html", "web page", "share"],
+        aliases: [":export"],
+        run: () => {
+          const content = ctx.getActiveContent();
+          if (content !== null) void exportAsHtml(path, content);
+        },
+      },
+      {
+        id: "export-pdf",
+        title: t("command.exportPdf"),
+        keywords: ["export", "pdf", "print", "share"],
+        aliases: [":pdf", ":print"],
+        run: () => {
+          const content = ctx.getActiveContent();
+          if (content !== null) void exportAsPdf(path, content);
+        },
+      },
+    );
+  }
+
+  commands.push(toggleThemeCommand(), ...selectThemeCommands());
 
   return commands;
 }
