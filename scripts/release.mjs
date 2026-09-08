@@ -15,7 +15,7 @@ import { execSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 const REPO = "FulecoRafa/fuchico";
 const TAP = "FulecoRafa/homebrew-tap";
@@ -94,9 +94,13 @@ if (process.platform !== "darwin") die("the full release runs on macOS; use --up
 if (out("git status --porcelain")) die("working tree is not clean");
 if (out("git branch --show-current") !== "main") die("release from main");
 if (spawnSync("gh", ["auth", "status"]).status !== 0) die("gh is not authenticated");
-const targets = out("rustup target list --installed").split("\n");
+// Always build with rustup's stable toolchain: a Homebrew `cargo` earlier in
+// PATH has no x86_64 standard library and cannot cross-build the Intel dmg.
+const cargoDir = dirname(out("rustup which cargo --toolchain stable"));
+process.env.PATH = `${cargoDir}:${process.env.PATH}`;
+const targets = out("rustup target list --installed --toolchain stable").split("\n");
 for (const t of ["aarch64-apple-darwin", "x86_64-apple-darwin"])
-  if (!targets.includes(t)) die(`missing rust target: rustup target add ${t}`);
+  if (!targets.includes(t)) die(`missing rust target: rustup target add --toolchain stable ${t}`);
 
 // 1. Version bump + tag.
 sh(`node scripts/set-version.mjs ${version}`);

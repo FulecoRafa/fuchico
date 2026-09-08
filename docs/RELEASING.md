@@ -10,7 +10,9 @@ cargo test --manifest-path src-tauri/Cargo.toml --lib
 
 ## macOS (the main release)
 
-One-time setup: `rustup target add x86_64-apple-darwin` and `gh auth login`.
+One-time setup: `rustup toolchain install stable`, `rustup target add
+--toolchain stable x86_64-apple-darwin` and `gh auth login`. The script builds
+with rustup's stable toolchain even if a Homebrew `cargo` comes first in PATH.
 
 ```sh
 node scripts/release.mjs 0.2.0
@@ -61,7 +63,7 @@ release script; `tauri build` picks them up.
 
 | Channel | Status | What is needed |
 | --- | --- | --- |
-| Homebrew (#34) | automated by the release script | Push access to `FulecoRafa/homebrew-tap` via `gh`. Users: `brew tap FulecoRafa/tap && brew install --cask fuchico`. |
+| Homebrew (#34) | automated by the release script | Push access to `FulecoRafa/homebrew-tap` via `gh`. Users: `brew trust FulecoRafa/tap && brew install --cask FulecoRafa/tap/fuchico` (Homebrew refuses untrusted third-party taps without the `trust` step). |
 | winget (#35) | manual | After a release with a Windows asset, submit with `wingetcreate` (see `packaging/winget/README.md`). Later versions: `wingetcreate update FulecoRafa.Fuchico --version X.Y.Z --urls <setup.exe url> --submit`. |
 | Flatpak (#37) | manual | Flathub takes submissions as a PR to `flathub/flathub` with `packaging/flatpak/*` (update the .deb URL and sha256 first). |
 | Nix | in-repo | `nix run github:FulecoRafa/fuchico`; bump `cargoHash`/`pnpmDeps.hash` in `package.nix` when dependencies change. |

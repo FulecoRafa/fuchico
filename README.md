@@ -132,7 +132,7 @@ Prebuilt installers for every release are on the
 | Linux | `.deb`, `.rpm` or `.AppImage` when available, or Nix (below) |
 | Windows | `-setup.exe` (or the `.msi`) |
 
-Homebrew: `brew tap FulecoRafa/tap && brew install --cask fuchico`.
+Homebrew: `brew trust FulecoRafa/tap && brew install --cask FulecoRafa/tap/fuchico`.
 winget and Flatpak are on the way (see [docs/RELEASING.md](docs/RELEASING.md)).
 
 Fuchico registers itself as a handler for `.md`/`.markdown`, so you can set
@@ -309,7 +309,7 @@ Instaladores prontos de cada versão ficam na
 | Linux | `.deb`, `.rpm` ou `.AppImage` quando disponíveis, ou Nix (abaixo) |
 | Windows | `-setup.exe` (ou o `.msi`) |
 
-Homebrew: `brew tap FulecoRafa/tap && brew install --cask fuchico`.
+Homebrew: `brew trust FulecoRafa/tap && brew install --cask FulecoRafa/tap/fuchico`.
 winget e Flatpak estão a caminho (veja [docs/RELEASING.md](docs/RELEASING.md)).
 
 O Fuchico se registra como aplicativo para `.md`/`.markdown`, então dá para
