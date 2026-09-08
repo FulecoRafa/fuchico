@@ -1,5 +1,6 @@
 import { openEditorWindow } from "@/lib/editorWindow";
 import { t, useLocale } from "@/lib/i18n";
+import { useOpenRequests } from "@/lib/useOpenRequests";
 import { AgendaView } from "@/modules/agenda";
 import { BacklinksPane } from "@/modules/backlinks";
 import {
@@ -191,6 +192,19 @@ function App() {
     (path: string) => void openEditorWindow(path, rootPath),
     [rootPath],
   );
+
+  // Files handed over by the OS (issue #38); waits for the vault restore so
+  // a note inside it becomes a tab rather than re-rooting the vault.
+  useOpenRequests(!restoring, {
+    rootPath,
+    setRoot: (dir) => {
+      setRootPath(dir);
+      closeAll();
+      localStorage.setItem(LAST_ROOT_KEY, dir);
+    },
+    openInVault: (path) => openFile(path),
+    openElsewhere: (path) => void openEditorWindow(path, rootPath),
+  });
 
   const openMermaid = useCallback(
     (payload: { blockKey: string; text: string }) => {

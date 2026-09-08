@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "A standalone code editor with correct Helix keybindings"
 authors = ["fuleco"]
 edition = "2021"
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -37,6 +38,7 @@ tokio = { version = "1.53.0", features = ["time", "rt", "macros"] }
 font-kit = "0.14"
 base64 = "0.22"
 tauri-plugin-window-state = "2"
+tauri-plugin-single-instance = "2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 keyring-core = "1.0.0"

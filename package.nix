@@ -54,6 +54,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
   meta = {
     description = "Standalone notes editor with Helix modal editing";
     homepage = "https://github.com/FulecoRafa/fuchico";
+    license = lib.licenses.mit;
     mainProgram = "fuchico";
     inherit (cargo-tauri.hook.meta) platforms;
   };

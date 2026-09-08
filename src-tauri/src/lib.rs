@@ -7,6 +7,7 @@ use modules::caldav::commands as caldav;
 use modules::fonts;
 use modules::fs::{file, mutate, tree};
 use modules::links;
+use modules::open_files;
 use modules::search;
 use modules::tags;
 use modules::tasks;
@@ -33,6 +34,15 @@ fn export_print(window: tauri::WebviewWindow) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // Must be registered first. A second launch (Linux/Windows file
+        // association, or `fuchico note.md` in a shell) hands its argv to the
+        // running instance instead of opening a new one (issue #38).
+        .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
+            let paths =
+                open_files::paths_from_args(args.iter().skip(1), Some(std::path::Path::new(&cwd)));
+            open_files::push(app, paths);
+        }))
+        .manage(open_files::OpenRequests::default())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_log::Builder::new().build())
@@ -75,6 +85,18 @@ pub fn run() {
                 });
             }
 
+            // First launch with a file argument (Linux/Windows). macOS
+            // delivers files through RunEvent::Opened below. The webview is
+            // not up yet, so this only queues; the frontend drains the queue
+            // via open_requests_take on startup.
+            #[cfg(not(target_os = "macos"))]
+            {
+                let cwd = std::env::current_dir().ok();
+                let paths =
+                    open_files::paths_from_args(std::env::args().skip(1), cwd.as_deref());
+                open_files::push(app.handle(), paths);
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -108,7 +130,23 @@ pub fn run() {
             caldav::caldav_sync_now,
             caldav::caldav_get_sync_status,
             fonts::fonts_list_system,
+            open_files::open_requests_take,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Opened { urls } = event {
+                let paths = urls
+                    .iter()
+                    .filter_map(|u| u.to_file_path().ok())
+                    .map(|p| p.to_string_lossy().into_owned())
+                    .collect();
+                open_files::push(app, paths);
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                let _ = (app, event);
+            }
+        });
 }

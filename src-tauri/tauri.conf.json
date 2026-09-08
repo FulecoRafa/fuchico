@@ -31,6 +31,32 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "category": "Productivity",
+    "shortDescription": "Notes editor with Helix modal editing",
+    "longDescription": "Fuchico is a standalone desktop notes editor: plain markdown files on disk, edited with real Helix keybindings, with live preview, tasks, tags, backlinks and CalDAV sync.",
+    "fileAssociations": [
+      {
+        "ext": [
+          "md",
+          "markdown"
+        ],
+        "name": "Markdown",
+        "description": "Markdown document",
+        "mimeType": "text/markdown",
+        "role": "Editor"
+      }
+    ],
+    "linux": {
+      "deb": {
+        "section": "editors"
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "11.0"
+    },
+    "publisher": "FulecoRafa",
+    "copyright": "\u00a9 2026 FulecoRafa",
+    "license": "MIT"
   }
 }

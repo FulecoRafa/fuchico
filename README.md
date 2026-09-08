@@ -121,6 +121,23 @@ plugin ecosystem.
 | [`regex`](https://github.com/rust-lang/regex) | Task/date scanning |
 | [`uuid`](https://github.com/uuid-rs/uuid), [`sha2`](https://github.com/RustCrypto/hashes) | IDs & hashing |
 
+### Install
+
+Prebuilt installers for every release are on the
+[Releases page](https://github.com/FulecoRafa/fuchico/releases/latest):
+
+| Platform | Download |
+| --- | --- |
+| macOS (Apple Silicon / Intel) | `.dmg` — the app is not notarized yet, so run `xattr -dr com.apple.quarantine /Applications/Fuchico.app` once, or right-click › Open on first launch |
+| Linux | `.deb`, `.rpm` or `.AppImage` when available, or Nix (below) |
+| Windows | `-setup.exe` (or the `.msi`) |
+
+Homebrew: `brew tap FulecoRafa/tap && brew install --cask fuchico`.
+winget and Flatpak are on the way (see [docs/RELEASING.md](docs/RELEASING.md)).
+
+Fuchico registers itself as a handler for `.md`/`.markdown`, so you can set
+it as the default app for markdown files in your OS.
+
 ### Install with Nix
 
 Run Fuchico without installing it:
@@ -280,6 +297,23 @@ de um ecossistema de plugins.
 | [`chrono`](https://github.com/chronotope/chrono) | Manipulação de datas/horas |
 | [`regex`](https://github.com/rust-lang/regex) | Varredura de tarefas/datas |
 | [`uuid`](https://github.com/uuid-rs/uuid), [`sha2`](https://github.com/RustCrypto/hashes) | IDs & hashing |
+
+### Instalação
+
+Instaladores prontos de cada versão ficam na
+[página de Releases](https://github.com/FulecoRafa/fuchico/releases/latest):
+
+| Plataforma | Download |
+| --- | --- |
+| macOS (Apple Silicon / Intel) | `.dmg` — o app ainda não é notarizado; rode `xattr -dr com.apple.quarantine /Applications/Fuchico.app` uma vez, ou clique-direito › Abrir na primeira execução |
+| Linux | `.deb`, `.rpm` ou `.AppImage` quando disponíveis, ou Nix (abaixo) |
+| Windows | `-setup.exe` (ou o `.msi`) |
+
+Homebrew: `brew tap FulecoRafa/tap && brew install --cask fuchico`.
+winget e Flatpak estão a caminho (veja [docs/RELEASING.md](docs/RELEASING.md)).
+
+O Fuchico se registra como aplicativo para `.md`/`.markdown`, então dá para
+defini-lo como padrão para arquivos markdown no seu sistema.
 
 ### Instalação com Nix
 
