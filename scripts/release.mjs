@@ -100,7 +100,8 @@ for (const t of ["aarch64-apple-darwin", "x86_64-apple-darwin"])
 
 // 1. Version bump + tag.
 sh(`node scripts/set-version.mjs ${version}`);
-sh(`git commit -qam "release: v${version}"`);
+if (out("git status --porcelain")) sh(`git commit -qam "release: v${version}"`);
+else console.log("  (version already set; nothing to commit)");
 sh(`git tag v${version}`);
 
 // 2. Build both macOS bundles.
