@@ -6,8 +6,8 @@
 #   brew install --cask fuchico
 cask "fuchico" do
   version "0.1.0"
-  sha256 arm:   "REPLACED_BY_RELEASE_WORKFLOW",
-         intel: "REPLACED_BY_RELEASE_WORKFLOW"
+  sha256 arm:   "713224a0477113db0c1f8b2aae52cb96ce50b2eda4080d39584adb3da2306c44",
+         intel: "ce59d090beda03848c64bc5858f850c7445c7db51c734e5eee5b0fedfb262a14"
 
   arch arm: "aarch64", intel: "x64"
 
