@@ -3,7 +3,7 @@
 winget packages are submitted as manifests to
 [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs). The package
 id is `FulecoRafa.Fuchico` and the installer is the NSIS `-setup.exe` produced
-by the Release workflow.
+by `node scripts/release.mjs --upload` on a Windows machine.
 
 ## First submission
 
@@ -23,6 +23,6 @@ by the Release workflow.
 
 ## Later releases
 
-Add the `WINGET_TOKEN` repository secret (a GitHub PAT with `public_repo`) and
-the `winget` job in `.github/workflows/release.yml` will submit the update
-automatically via `wingetcreate update`.
+```powershell
+wingetcreate update FulecoRafa.Fuchico --version X.Y.Z --urls https://github.com/FulecoRafa/fuchico/releases/download/vX.Y.Z/Fuchico_X.Y.Z_x64-setup.exe --submit
+```

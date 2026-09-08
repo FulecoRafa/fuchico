@@ -1,6 +1,6 @@
 # Homebrew cask for Fuchico (issue #34). Lives in the tap repository
-# FulecoRafa/homebrew-tap as Casks/fuchico.rb; the Release workflow rewrites
-# `version` and the sha256 values after every tagged build.
+# FulecoRafa/homebrew-tap as Casks/fuchico.rb; scripts/release.mjs rewrites
+# `version` and the sha256 values on every release.
 #
 #   brew tap FulecoRafa/tap
 #   brew install --cask fuchico

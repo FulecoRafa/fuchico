@@ -1,5 +1,5 @@
 # Flatpak manifest for Fuchico (issue #37). Repackages the .deb produced by
-# the Release workflow, the approach Tauri documents for Flathub. To submit
+# `scripts/release.mjs --upload` on Linux, the approach Tauri documents for Flathub. To submit
 # to Flathub, copy this file plus the .metainfo.xml and .desktop next to it
 # into a fork of github.com/flathub/flathub and open the "new app" PR.
 #

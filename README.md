@@ -129,7 +129,7 @@ Prebuilt installers for every release are on the
 | Platform | Download |
 | --- | --- |
 | macOS (Apple Silicon / Intel) | `.dmg` — the app is not notarized yet, so run `xattr -dr com.apple.quarantine /Applications/Fuchico.app` once, or right-click › Open on first launch |
-| Linux | `.deb`, `.rpm` or `.AppImage` |
+| Linux | `.deb`, `.rpm` or `.AppImage` when available, or Nix (below) |
 | Windows | `-setup.exe` (or the `.msi`) |
 
 Homebrew: `brew tap FulecoRafa/tap && brew install --cask fuchico`.
@@ -306,7 +306,7 @@ Instaladores prontos de cada versão ficam na
 | Plataforma | Download |
 | --- | --- |
 | macOS (Apple Silicon / Intel) | `.dmg` — o app ainda não é notarizado; rode `xattr -dr com.apple.quarantine /Applications/Fuchico.app` uma vez, ou clique-direito › Abrir na primeira execução |
-| Linux | `.deb`, `.rpm` ou `.AppImage` |
+| Linux | `.deb`, `.rpm` ou `.AppImage` quando disponíveis, ou Nix (abaixo) |
 | Windows | `-setup.exe` (ou o `.msi`) |
 
 Homebrew: `brew tap FulecoRafa/tap && brew install --cask fuchico`.
