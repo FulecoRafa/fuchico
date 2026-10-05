@@ -31,7 +31,13 @@ rustPlatform.buildRustPackage (finalAttrs: {
     inherit (finalAttrs) pname version src;
     pnpm = pnpm_10;
     fetcherVersion = 3;
-    hash = "sha256-kbCV7/MZxBC3ndp7PJIRMGMPlvr5JpACXfwrJrUHv90=";
+    # pnpm only fetches the native optional dependencies for the current
+    # platform, so the hash differs per system.
+    hash =
+      {
+        x86_64-linux = "sha256-giBP1lyTxGpqI/Ja5bvcSGMPE3q9uYo26xR1/NX/zgI=";
+      }
+      .${stdenv.hostPlatform.system} or "sha256-kbCV7/MZxBC3ndp7PJIRMGMPlvr5JpACXfwrJrUHv90=";
   };
 
   nativeBuildInputs = [
